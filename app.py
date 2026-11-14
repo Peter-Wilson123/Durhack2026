@@ -123,31 +123,6 @@ def register():
 	return flask.render_template("register.html")
 
 
-@app.route("/search", methods=["GET", "POST"])
-def search_getpost():
-
-	results = []
-	search_term = ""
-
-	if flask.request.method == "POST":
-
-		search_term = flask.request.form.get("search", "").strip()
-
-	exclude_id = (
-            flask_login.current_user.user_id
-            if flask_login.current_user.is_authenticated
-            else None
-        )
-	users = search.find_users_by_interest(
-            search_term, exclude_user_id=exclude_id)
-	print(users)
-	return flask.render_template(
-            "search.html",
-            results=users,
-            search_term=search_term
-	)
-
-
 with app.app_context():
 	db.create_all()
 
