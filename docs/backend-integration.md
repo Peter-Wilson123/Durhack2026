@@ -174,3 +174,46 @@ its categories through its tags, and `Interest.category` is the most common one.
   `/account`, and asked for on the sign-in form.
 - The mock profile page (`/u/…`) withholds contacts, drafts and hidden years on the
   server, but it uses made-up data and no real user records.
+
+## What the frontend does with each gap (temporary fallbacks)
+
+All of these are marked `TODO(backend)` in the code.
+
+| Missing | Fallback | Where |
+|---|---|---|
+| public `handle` | Profiles live at `/u/<user_id>`. No @handle is shown. | `profiles.py`, `profile_api.py` |
+| `display_name` empty | "Durham student" (never the username) | `profile_api.FALLBACK_NAME` |
+| `year` | Not shown | `profile_api.to_profile` |
+| `avatar_colour` | Picked from the palette by `user_id` | `profile_api._fallback_avatar` |
+| `bio_published` | Treated as published, because bios are already public on `/view` | `profile_api.to_profile` |
+| contacts | Empty for self and connections ("No contact details added yet"). `None`, so locked, for everyone else. | `profile_api.to_profile` and `get_profile` |
+| update endpoint | Edit page previews changes, but its save and publish buttons are disabled | `templates/profile/edit.html` |
+| wave endpoints | `sendWave` and `acceptWave` are stubs that send nothing and say so | `static/profile.js` |
+| categories endpoint | The idle home page shows random tag groups from `/api/discover` | `static/home.js` |
+| category slug | Made from `category_name` | `colours.category_slug` |
+
+`viewer_relation`, `wave_status` and `connection_count` are **derived** from the real
+`connections` table (they are not fallbacks).
+
+## Running it locally
+
+There's no separate frontend server, `.env` or CORS setup: Flask serves everything on
+one origin.
+
+```bash
+pip install flask flask-login flask-sqlalchemy
+rm -f instance/app.db          # only if your database predates the tags change
+python testdata.py             # optional: 5 seeded users (drops all tables first)
+python app.py                  # http://127.0.0.1:5000
+```
+
+- **Mac:** port 5000 is taken by AirPlay, so change the port in the last line of
+  `app.py`, or turn off AirPlay Receiver.
+- **Preview as:** only appears when the app runs with `app.run(debug=True)`.
+- **Seeded accounts:** sign in with the user's email and `password123`.
+  - Seen from `alex@uni.ac.uk`:
+    - **self:** `/u/1`
+    - **connection:** `/u/2` (maya), `/u/3` (liam)
+    - **other, and has waved at you:** `/u/4` (priya)
+    - **other:** `/u/5` (sam)
+  - Until problem 1 is fixed, any password works.
