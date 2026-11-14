@@ -4,7 +4,6 @@ import auth
 import discovery
 import interests
 import profiles
-import search
 import find_new_interest
 import user_account
 from models import (
@@ -56,6 +55,12 @@ def account():
 	return flask.render_template("account.html")
 
 
+@app.get("/create_interest")
+@flask_login.login_required
+def create_interest():
+	return flask.render_template("create_interest.html")
+
+
 # LOGIN #
 
 @app.get("/login")
@@ -82,13 +87,6 @@ def login_post():
 def logout():
 	flask_login.logout_user()
 	return flask.redirect(flask.url_for("login_get"))
-
-
-@app.route("/view/<username>")
-def view(username):
-	user = auth.load_user(username=username,
-                       email=username)
-	return flask.render_template("view.html", other_user=user)
 
 
 @app.route("/register", methods=["GET", "POST"])

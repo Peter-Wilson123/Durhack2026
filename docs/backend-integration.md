@@ -437,9 +437,9 @@ The message never reveals whether an address has an account.
 - **Contacts:** withheld on the server for non-connections. There are no contact fields at all; for strangers `profile_api` sets `contacts` to `None`.
 - **Public cards and profiles:** responses for `/u/<id>` (other students), `/interests/<id>` and the partials contain no email or username. This was checked by fetching the HTML the pages receive.
 - **The owner's own page** contains only their own data.
-- **Still leaking (backend):** `/view/<username>` (email and CIS code) and `/account` (own email and username).
-- **Fixed:** `/search` was removed on `main` (`182f6bb`, Craig), so problem 6 (emails on `/search`) is gone.
-- **⚠️ Broken:** `app.py` still has `import search`, but `search.py` was deleted, so the app doesn't start until that line is removed.
+- **Still showing private data (backend):** `/account` shows your own email and username (CIS code) to you.
+- **Fixed on `main` (Craig):** `/search` was removed (`182f6bb`), so problem 6 (emails on `/search`) is gone. `/view/<username>` was removed (`690a79a`), so problems 2, 3 and 5 (emails and CIS codes on `/view`) are gone too.
+- **Two ways to create an interest now exist:** the home page's "Create it?" form (with tag chips, duplicate check and auto-add) and Craig's separate `/create_interest` page (`690a79a`). His page loads no script, so its tag field can't add tags yet. The team should pick one.
 
 ## Home page: categories before typing (manual test)
 
