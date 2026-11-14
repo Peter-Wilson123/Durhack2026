@@ -1,9 +1,28 @@
-{# The whole profile for one viewer. Also served alone (?partial=1) when the View-as toggle changes #}
-<div class="profile-body" data-relation="{{ p.viewer_relation }}">
+{# The profile cards. Left column: Interests (and, for the owner, Suggested).
+   Right column: Contact above About. On phones it is one column in reading order:
+   header, Interests, Suggested, About, Contact (CSS moves Contact up on desktop). #}
+<div class="profile-body" data-relation="{{ p.viewer_relation }}" data-user="{{ p.id }}" data-editing="false">
 	{% include "profile/_header.html" %}
-	<div class="profile-grid">
-		{% include "profile/_interest_tags.html" %}
-		{% include "profile/_bio_card.html" %}
-		{% include "profile/_contact_card.html" %}
+	<div class="profile-columns">
+		<div class="profile-col">
+			{% include "profile/_interest_tags.html" %}
+			{% if p.viewer_relation == "self" %}{% include "profile/_suggestions.html" %}{% endif %}
+		</div>
+		<div class="profile-col profile-col-side">
+			{% include "profile/_bio_card.html" %}
+			{% include "profile/_contact_card.html" %}
+		</div>
 	</div>
+
+	{% if p.viewer_relation == "self" %}
+	{# EditBar: sticky while editing. Interests and the bio save straight away with their own
+	   buttons, so this only leaves edit mode (warning first if the bio isn't published). #}
+	<div class="edit-bar edit-only" role="region" aria-label="Editing your profile">
+		<p class="edit-bar-status" id="edit-status" role="status" aria-live="polite">Editing your profile</p>
+		<div class="edit-bar-actions">
+			<button type="button" class="btn btn-outline-secondary" data-action="cancel-edit">Cancel</button>
+			<button type="button" class="btn btn-primary" data-action="done-edit">Done</button>
+		</div>
+	</div>
+	{% endif %}
 </div>

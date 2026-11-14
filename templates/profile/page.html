@@ -1,4 +1,5 @@
-{# ProfilePage: the page at /u/<user_id> #}
+{# ProfilePage: /u/<user_id>. Everyone sees the same cards; the owner can switch them
+   into edit mode in place ("Edit profile"), with a sticky Cancel / Done bar. #}
 {% extends "base.html" %}
 
 {% block title %}{{ p.display_name }} · Superposition{% endblock %}
@@ -11,7 +12,14 @@
 <div class="profile-page">
 	{% if view_as_enabled %}{% include "profile/_view_as_toggle.html" %}{% endif %}
 
-	<div id="profile-view">
+	{% if p.can_preview and p.viewer_relation != "self" %}
+	<p class="preview-banner" role="status">
+		You're seeing your profile the way {{ "your connections" if p.viewer_relation == "connection" else "other students" }} see it.
+		<a href="{{ url_for('profiles.show', user_id=p.id) }}">Back to my profile</a>
+	</p>
+	{% endif %}
+
+	<div id="profile-view" data-edit-on-load="{{ 'true' if request.args.get('edit') and p.viewer_relation == 'self' else 'false' }}">
 		{% include "profile/_body.html" %}
 	</div>
 	<p class="profile-load-error" id="profile-load-error" role="alert" hidden>
