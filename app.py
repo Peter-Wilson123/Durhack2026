@@ -1,6 +1,6 @@
 import flask
 import flask_login
-
+import auth
 
 from models import (
 	Category,
@@ -83,24 +83,48 @@ def register_success():
 
 @app.get("/register")
 def register():
-	return """<form method=post>
-	  Email: <input name="email"><br>
-	  Password: <input name="password" type=password><br>
-	  <button>Add account</button>
-	</form>"""
+    return """<form method="post">
+      Username: <input name="username" required><br>
+      Display Name: <input name="display_name" required><br>
+      Email: <input name="email" type="email" required><br>
+      Password: <input name="password" type="password" required><br>
+      Bio: <textarea name="bio" rows="3" cols="30"></textarea><br>
+      City: <input name="city"><br>
+      Country: <input name="country"><br>
+      Avatar URL (optional): <input name="avatar_url"><br>
+      <button>Add account</button>
+    </form>"""
 
 
 @app.post("/register")
 def register_post():
-	username = flask.request.form["email"]
-	password = flask.request.form["password"]
+    username = flask.request.form.get("username", "").strip()
+    display_name = flask.request.form.get("display_name", "").strip()
+    email = flask.request.form.get("email", "").strip()
+    password = flask.request.form.get("password", "")
+    bio = flask.request.form.get("bio", "").strip()
+    city = flask.request.form.get("city", "").strip()
+    country = flask.request.form.get("country", "").strip()
+    avatar_url = flask.request.form.get("avatar_url", "").strip()
 
-	if username is None or not auth.is_user(username):
-		print("true")
-		flask.redirect(flask.url_for("register"))
+    # Make sure required fields are filled and not already taken
+    if not username or not display_name or not email or not password:
+        return flask.redirect(flask.url_for("register"))
 
-	auth.register_user(username, password)
-	return flask.redirect(flask.url_for("register_success"))
+    if auth.is_user(username,email):
+        return flask.redirect(flask.url_for("register"))
+
+    auth.register_user(
+        username=username,
+        password=password,
+        email=email,
+        display_name=display_name,
+        bio=bio,
+        city=city,
+        country=country,
+        avatar_url=avatar_url,
+    )
+    return flask.redirect(flask.url_for("register_success"))
 
 
 with app.app_context():

@@ -37,7 +37,6 @@ def seed_database():
             display_name="Alex Mercer",
             email="alex@uni.ac.uk",
             bio="First-year CS student trying to find people who like weird hobbies.",
-            graduation_year=2029,
             location_id=durham.location_id,
         )
         alex.set_password("password123")
@@ -47,7 +46,6 @@ def seed_database():
             display_name="Maya Lin",
             email="maya@uni.ac.uk",
             bio="Botany nerd, darkroom tinkerer, and second-hand bookshop regular.",
-            graduation_year=2028,
             location_id=durham.location_id,
         )
         maya.set_password("password123")
@@ -57,7 +55,6 @@ def seed_database():
             display_name="Liam O'Connor",
             email="liam@uni.ac.uk",
             bio="Weekend trail runner and analog printmaker.",
-            graduation_year=2027,
             location_id=edinburgh.location_id,
         )
         liam.set_password("password123")
@@ -67,7 +64,6 @@ def seed_database():
             display_name="Priya Nair",
             email="priya@uni.ac.uk",
             bio="Collecting obscure translated novellas and mechanical keyboards.",
-            graduation_year=2028,
             location_id=bristol.location_id,
         )
         priya.set_password("password123")
@@ -77,7 +73,6 @@ def seed_database():
             display_name="Samira Vance",
             email="sam@uni.ac.uk",
             bio="Horology enthusiast and student radio host.",
-            graduation_year=2027,
             location_id=durham.location_id,
         )
         sam.set_password("password123")
