@@ -332,3 +332,139 @@ Find an interest's ID from its link on the home page, or in the profile pills.
 
 "Load more" appears once more than 12 people have an interest. The seed data has at most
 3, so add users for testing, but only in a copy of the database, not in `testdata.py`.
+
+---
+
+# Login, own profile, creating interests and the category home page (14 Nov 2026, `main` at `5fe703e`)
+
+The backend is still Flask + SQLite. **New since the last section:** Peter's
+`POST /update-account` (`app.py`, `user_account.py`).
+
+## ⚠️ Security gaps (verified)
+
+1. **Any password still signs in** (problem 1): `alex@uni.ac.uk` with the password `WRONG` reaches `/account`.
+2. **`/update-account` can change `users.username`, which is the CIS code**, to any unused value.
+   - Someone could take another person's CIS code before that person registers.
+   - The frontend never sends `new-username`, but the server accepts it.
+3. **`POST /interests/new` needs no sign-in.** Signed-out visitors can create interests, with no creator recorded. The home page only shows the form to signed-in users, but that is not protection.
+4. **Typos create interests.** `/update-account` silently *creates* an interest when `new-interests` doesn't match one exactly.
+   - The frontend only sends exact names taken from search results.
+5. **Interest editing:** there is no endpoint to edit an interest, so the server enforces nothing about who may edit.
+   - `interests.created_by_user_id` exists, and the page uses it to show the creator a (disabled) Edit button.
+   - When an edit endpoint is added, it **must** check the creator on the server.
+6. **No CSRF protection** on any POST (`/login`, `/update-account`, `/interests/new`).
+   - Modern browsers' default `SameSite=Lax` cookies limit this, but nothing in the app sets it.
+
+## LOGIN STATUS
+
+Tested with Flask's test client and the in-app browser against a seeded copy of the database.
+
+| Case | Status | Notes |
+|---|---|---|
+| Student email → verification email/link/code → signed in | **CANNOT TEST** | There is no verification step and no email service. Sign-in is email (or username) plus password. |
+| Sign in with correct email + password | **WORKS** | Redirects to `/account`. |
+| Refresh keeps the session | **WORKS** | Flask-Login session cookie. It lasts until the browser closes (no "remember me"). |
+| Sign out | **WORKS** | `/logout` → `/login`. Protected pages then need sign-in again. |
+| Wrong password | **BROKEN (backend)** | Signs in anyway (security gap 1). |
+| Wrong or expired code | **CANNOT TEST** | There are no codes. |
+| Non-Durham address (e.g. `@gmail.com`) | **BROKEN (backend)** | `/register` accepts any domain. Signing in with an unknown address correctly fails, and now shows the Durham-only message (fixed). |
+| Staff-style address (e.g. `j.smith@durham.ac.uk`) | **BROKEN (backend)** | Nothing tells students from staff. A staff-style address registered and signed in. |
+| Empty fields | **WORKS** | The browser blocks empty fields. The server also rejects them and returns to `/login`. |
+| Protected page while signed out | **WORKS (fixed)** | `/u/*` and `/interests/*` redirect to `/login`. Backend routes with `login_required` showed a page whose link opened a new tab; it now redirects to `/login`. Routes without `login_required` (`/`, `/search`, `/view/*`, `/api/*`, `POST /interests/new`) stay public. |
+| CIS code handling | **PARTLY** | Our sign-in asks for the email, not the CIS code. The backend still shows usernames on `/account`, `/view` and `/search`, and the register form still asks for "Username". |
+
+**Frontend fixes made:**
+- the sign-in page shows the Durham-only message after a failed attempt;
+- `unauthorized.html` now redirects to sign-in.
+
+The message never reveals whether an address has an account.
+
+## Endpoints used by this work
+
+| Method | Path | Request | Response | Auth |
+|---|---|---|---|---|
+| POST | `/update-account` | form: `new-username`, `new-bio`, `new-interests` (comma-separated names), `remove-interests` (comma-separated names) | 302 → `/account` | login |
+| POST | `/interests/new` | form: `interest_name`, `description`, `tags` (repeatable) | 302 → `/interests/<id>`, or to the existing interest if the name matches | **none** |
+| GET | `/api/interests?q=` | – | `{results: [{id, name, url, tags[]}]}`: name contains `q` (keyword, not semantic) | none |
+| GET | `/api/tags?q=&exclude=` | – | `{results: [{name, count, categories[]}]}` | none |
+| GET | `/api/discover?q=` | – | `{query, nameMatches, groups: [{key, title, categories[], interests[]}]}` | none |
+| GET | `/find-new-interest` | – | 302 to **one** recommended interest | login |
+
+**How `/update-account` behaves:**
+- `new-bio` is ignored when blank, so a bio can't be cleared;
+- it has no length limit and no draft state;
+- it can't set the display name, year, avatar colour or contacts.
+
+**Not found:**
+- no endpoint to edit or delete an interest;
+- no categories endpoint;
+- no suggestions endpoint beyond the single `/find-new-interest` redirect;
+- no re-embed endpoint (there are no embeddings at all).
+
+## Field mapping
+
+| Frontend needs | Comes from | Status |
+|---|---|---|
+| save bio | `POST /update-account` `new-bio` | ✓, but only as **published** (no drafts) and can't be cleared |
+| `bio_published` / drafts | – | **MISSING**: only "Publish bio" saves |
+| save display name, year, avatar colour, contacts | – | **MISSING**: inputs shown disabled |
+| add / remove an interest | `POST /update-account` `new-interests` / `remove-interests`, by exact name | ✓ |
+| suggestions (3, similar, excluding owned) | `discovery.related_interests()` per owned interest, ranked by `profile_api.get_suggestions` | Derived (no endpoint). Dismissals aren't stored. |
+| create interest: name, description, tags | `POST /interests/new` | ✓ |
+| create interest: **category** | – (categories come only from tags) | **MISSING**: the form says the category comes from tags |
+| auto-add a created interest | `POST /update-account` `new-interests` right after creating | ✓ (two requests) |
+| duplicate check | `GET /api/interests?q=` (name contains) | ✓, keyword not semantic |
+| `viewer_is_creator` | `interests.created_by_user_id` | ✓ |
+| edit interest | – | **MISSING** |
+| interest `slug` | – | **MISSING**: URLs stay `/interests/<id>` |
+| categories (10) with samples | `categories` → `tags` → `interests`, read by `home_api.py` | Derived (no endpoint). The backend has **20** categories; `colours.py` groups them into the 10 shown. |
+| a tag-box interest's own category | – (`/api/discover` returns categories per box, not per interest) | **MISSING**: pills use their box's colour |
+
+## Gaps for Craig and Peter (this round)
+
+1. **Security first:** check passwords; stop `/update-account` changing the CIS-code username; require sign-in for `POST /interests/new`; add CSRF protection.
+2. **Durham-only sign-in:** email verification (link or code), student-only addresses, and a way to exclude staff.
+3. **Profile fields and drafts:** `display_name`, `year`, `show_year`, `avatar_colour`, `bio_published` and contact columns, with an update endpoint that accepts them. Allow clearing the bio.
+4. **Interest editing:** an update endpoint (name, description, tags) that checks `created_by_user_id` on the server, plus slugs that stay the same after a rename.
+5. **Category on create:** a field, if interests should have a category of their own rather than one taken from their tags.
+6. **Suggestions endpoint:** returns N similar interests excluding the user's own, with a way to dismiss one permanently.
+7. **Categories endpoint**, and **each interest's category** in `/api/discover` results.
+8. **JSON errors:** `/update-account` and `/interests/new` should return 4xx with a message, so the page can show it (for example, for a duplicate name). Today they only redirect.
+9. **If semantic search arrives:** creating or editing an interest will need a re-embed step on the server.
+
+## Privacy check (this round)
+
+- **Contacts:** withheld on the server for non-connections. There are no contact fields at all; for strangers `profile_api` sets `contacts` to `None`.
+- **Public cards and profiles:** responses for `/u/<id>` (other students), `/interests/<id>` and the partials contain no email or username. This was checked by fetching the HTML the pages receive.
+- **The owner's own page** contains only their own data.
+- **Still leaking (backend):** `/search` (emails), `/view/<username>` (email and CIS code), `/account` (own email and username).
+
+## Home page: categories before typing (manual test)
+
+Automated part: `python -m unittest tests.test_home`. It checks that the page renders exactly the 10 category cards and that the tag-box container starts empty and hidden, and that a typed query returns tag boxes.
+
+In the browser:
+1. Open `/`. You should see exactly 10 cards (Science … Recreation), each with its name on a coloured header and 3–4 interests.
+2. Type `music`. The cards disappear and tag boxes (`#music` …) appear, labelled with their category.
+3. Clear the box (or press Escape). The 10 category cards come back straight away.
+4. Reload the page. The sample interests change. They don't change while you type.
+
+## Testing this round locally
+
+```bash
+python testdata.py
+```
+
+```bash
+python app.py
+```
+
+Sign in as `alex@uni.ac.uk` with the password `password123`.
+
+| Test | Steps |
+|---|---|
+| Own profile | Open `/u/` → **Edit profile**. Publish a bio, remove an interest with ×, add one through "Add an interest", and use **Add** and × on the suggestions. |
+| Preview | **Preview as others see me** shows the public view. |
+| Create | Search for something that doesn't exist → **Create it?** Try the name `Astrophotography` first to see "Did you mean…". You land on the new interest, already added. |
+| Creator vs others | The creator sees a disabled **Edit**. Sign in as `maya@uni.ac.uk`: no Edit button. |
+| Home | See the manual test above. |
