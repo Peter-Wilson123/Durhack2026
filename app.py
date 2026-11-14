@@ -4,6 +4,7 @@ import auth
 import discovery
 import interests
 import search
+import find_new_interest
 from models import (
 	Category,
 	ChatRoom,
@@ -138,6 +139,15 @@ def search_getpost():
 with app.app_context():
 	db.create_all()
 
+@app.get("/find-new-interest")
+@flask_login.login_required
+def discover_new_interest():
+    recommended = find_new_interest.find_new_interest(flask_login.current_user)
+    if recommended:
+        return flask.redirect(
+            flask.url_for("interests.view_interest", interest_id=recommended.interest_id)
+        )
+    return flask.redirect(flask.url_for("account"))
 
 @app.route("/")
 def home():

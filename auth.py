@@ -78,3 +78,9 @@ def is_user(email: str, username: str = "") -> bool:
         return False
 
     return User.query.filter(or_(*conditions)).first() is not None
+
+
+
+
+
+
