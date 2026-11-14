@@ -23,7 +23,9 @@ class Location(db.Model):
 
 	users = db.relationship("User", back_populates="location")
 
-#User class will be used to interact with the database and the website
+# User class will be used to interact with the database and the website
+
+
 class User(UserMixin, db.Model):
 	__tablename__ = "users"
 

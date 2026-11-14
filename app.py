@@ -46,6 +46,8 @@ def account():
 	return flask.render_template("account.html")
 
 
+# LOGIN #
+
 @app.get("/login")
 def login_get():
 	return flask.render_template("login.html")
@@ -53,14 +55,16 @@ def login_get():
 
 @app.post("/login")
 def login_post():
-	username = flask.request.form["email"]
+	identifier = flask.request.form["email"]
 	password = flask.request.form["password"]
 
-	if username is None or not auth.varify_user(username, password):
+	if identifier is None or not auth.varify_user(identifier, password):
 		return flask.redirect(flask.url_for("login_get"))
 
-	flask_login.login_user(auth.get_user(username))
+	flask_login.login_user(auth.get_user(identifier))
 	return flask.redirect(flask.url_for("protected"))
+
+# LOGOUT
 
 
 @app.route("/logout")

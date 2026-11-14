@@ -1,10 +1,9 @@
 import flask_login
 from sqlalchemy import or_
-from models import User, db
 
 
 from sqlalchemy import func
-from models import Location, User, db
+from models import User, db
 
 
 def register_user(username: str, email: str, password: str) -> User:
@@ -20,21 +19,28 @@ def register_user(username: str, email: str, password: str) -> User:
 	return new_user
 
 
-def is_user(email: str, username: str = "") -> bool:
+def is_user(identifier: str) -> bool:
 	"""Returns True if an account already exists with this email or username."""
-	clean_email = (email or "").strip().lower()
-	clean_username = (username or "").strip().lower()
+	if not identifier:
+		return False
+	clean_identifier = identifier.strip().lower()
 
-	conditions = []
-	if clean_email:
-		conditions.append(User.email == clean_email)
+	if "@" in clean_identifier:
+		condition = (User.email == clean_identifier)
 		# Also check against username if only one argument was passed
-		if not clean_username:
-			conditions.append(User.username == clean_email)
-	if clean_username:
-		conditions.append(User.username == clean_username)
+
+	else:
+		condition = (User.username == clean_identifier)
 
 	if not conditions:
 		return False
 
 	return User.query.filter(or_(*conditions)).first() is not None
+
+
+def varify_user(identifer, password):
+	pass
+
+
+def get_user():
+	pass
