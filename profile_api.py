@@ -1,175 +1,84 @@
 """
-Profile data layer. The profile page gets ALL its data from here.
+Profile data layer: reads real users from the database (models.py) and maps
+them to the shape the profile templates use. ALL backend field names stay in
+this file; templates only ever see the dict below.
 
-Right now it serves MOCK data from memory, so the page can be built and demoed
-before the backend exists. To switch to real data, rewrite get_profile() and
-save_profile() to use the database; nothing else should need to change.
+Fields the backend can't supply yet use a fallback marked "TODO(backend)".
+See docs/backend-integration.md for the full list of gaps.
 
-!! The profile shape below is an ASSUMPTION. It has NOT been agreed with the
-!! backend team. Every field is listed here so changing it is a one-file edit.
+get_profile(user_id, viewer, preview_as=None) returns:
 
-get_profile(handle, as_relation=None) returns a dict:
+	id                user_id; used in URLs until the backend adds a public handle
+	handle            None: TODO(backend) no public handle exists. users.username
+	                  is the CIS code and must NEVER be shown or put in a URL.
+	display_name      users.display_name, else "Durham student"
+	has_display_name  False when display_name is the fallback
+	year, show_year   None, False: TODO(backend) no year column
+	avatar_colour     TODO(backend) no column: picked from the palette by user_id
+	interests         [{"name", "url", "category", "category_slug"}] from user_interests
+	bio               users.bio ("" for none)
+	bio_published     True: TODO(backend) no draft column, and bios are already public on /view
+	connection_count  accepted rows in connections where the user is either side
+	contacts          {} for self and connections: TODO(backend) no contact columns
+	                  None for everyone else (the template shows the locked card)
+	viewer_relation   "self" | "connection" | "other", worked out from connections
+	wave_status       "none" | "sent" | "received", from a pending connections row
+	can_preview       True when the viewer is the owner (allows the dev "View as" preview)
 
-	handle            str   lowercase a-z 0-9 _, 3-20 chars
-	display_name      str   1-30 chars, or None (the page then shows the handle)
-	year              str   one of YEARS, or None (hidden or not set)
-	show_year         bool  False means the owner chose "Don't show"
-	avatar_colour     str   a key of colours.AVATAR_COLOURS, e.g. "palatinate"
-	interests         list  [{"name": str, "category": str}]
-	bio               str   up to 160 chars ("" if none, or not visible to viewer)
-	bio_published     bool  False = private draft only the owner sees
-	connection_count  int   number of mutual Wave accepts (never the list)
-	contacts          dict  {"instagram": str, "x": str, "email": str}, each may be ""
-	                  None  for anyone who isn't the owner or a connection
-	viewer_relation   str   "self" | "connection" | "other"
-	wave_status       str   "none" | "sent" | "received"  (only means anything for "other")
-
-Privacy rules are applied HERE, not in the template: for a viewer who is not
-"self", unpublished bios and hidden years are blanked, and contacts are None
-unless the viewer is a connection. The page never receives data it must hide.
+Privacy rules are applied HERE, before anything reaches a template.
 """
 
-import copy
-import re
+from sqlalchemy import func, or_, select
+from sqlalchemy.orm import selectinload
 
-from colours import AVATAR_COLOURS
+from colours import AVATAR_COLOURS, category_slug, category_style
+from models import Connection, Interest, Tag, User, UserInterest, db
 
-YEARS = ["Fresher", "2nd year", "3rd year", "4th+", "Postgrad", "Other"]
 RELATIONS = ("self", "connection", "other")
 BIO_MAX = 160
 NAME_MAX = 30
+YEARS = ["Fresher", "2nd year", "3rd year", "4th+", "Postgrad", "Other"]
+
+FALLBACK_NAME = "Durham student"  # TODO(backend): shown when display_name is empty
 
 
 class ProfileNotFound(Exception):
 	pass
 
 
-class ProfileUnavailable(Exception):
-	"""The data source failed (e.g. the backend is down)."""
-
-
-# ---------- Mock data (no real people: names are made up, emails use example.com) ----------
-
-_MOCK = {
-	# Opens as the owner's own profile: "Edit profile" button, hidden year, draft bio
-	"quiet_heron": {
-		"handle": "quiet_heron",
-		"display_name": "Quiet Heron",
-		"year": "2nd year",
-		"show_year": False,
-		"avatar_colour": "palatinate",
-		"interests": [
-			{"name": "Wild swimming", "category": "outdoors"},
-			{"name": "Mechanical keyboards", "category": "tech"},
-			{"name": "Cyanotype printing", "category": "creative"},
-			{"name": "Birdwatching", "category": "outdoors"},
-			{"name": "Rust programming", "category": "tech"},
-			{"name": "Lino cutting", "category": "creative"},
-			{"name": "Pub quizzes", "category": "social"},
-		],
-		"bio": "Early riser. Usually by the river with binoculars or at a desk soldering something.",
-		"bio_published": False,
-		"connection_count": 3,
-		"contacts": {"instagram": "quiet.heron", "x": "quietheron", "email": "quiet_heron@example.com"},
-		"viewer_relation": "self",
-		"wave_status": "none",
-	},
-	# Opens as a connection: real contact links
-	"lantern_fox": {
-		"handle": "lantern_fox",
-		"display_name": "Lantern Fox",
-		"year": "3rd year",
-		"show_year": True,
-		"avatar_colour": "teal",
-		"interests": [
-			{"name": "Bouldering", "category": "sport"},
-			{"name": "Jazz piano", "category": "music"},
-			{"name": "Astronomy", "category": "academic"},
-			{"name": "Night photography", "category": "creative"},
-			{"name": "Board games", "category": "social"},
-		],
-		"bio": "Climbing three times a week, playing piano badly the rest of it. Ask me about the stars.",
-		"bio_published": True,
-		"connection_count": 42,
-		"contacts": {"instagram": "lantern.fox", "x": "lanternfox", "email": "lantern_fox@example.com"},
-		"viewer_relation": "connection",
-		"wave_status": "none",
-	},
-	# Opens as a stranger: contacts locked, "Wave" button
-	"moss_badger": {
-		"handle": "moss_badger",
-		"display_name": "Moss Badger",
-		"year": "Fresher",
-		"show_year": True,
-		"avatar_colour": "green",
-		"interests": [
-			{"name": "Foraging", "category": "outdoors"},
-			{"name": "Folk fiddle", "category": "music"},
-			{"name": "Medieval history", "category": "academic"},
-			{"name": "Competitive ferret racing", "category": "uncategorised"},
-		],
-		"bio": "New to Durham. Looking for people to forage with and a folk session to join.",
-		"bio_published": True,
-		"connection_count": 1,
-		"contacts": {"instagram": "", "x": "mossbadger", "email": "moss_badger@example.com"},
-		"viewer_relation": "other",
-		"wave_status": "none",
-	},
-	# Opens as a stranger who has waved at you: "Accept wave" button
-	"comet_otter": {
-		"handle": "comet_otter",
-		"display_name": None,  # no display name: the page falls back to the handle
-		"year": "Postgrad",
-		"show_year": True,
-		"avatar_colour": "rose",
-		"interests": [
-			{"name": "Rowing", "category": "sport"},
-			{"name": "Machine learning", "category": "tech"},
-			{"name": "Choir", "category": "music"},
-		],
-		"bio": "Draft bio nobody else should ever see.",
-		"bio_published": False,
-		"connection_count": 12,
-		"contacts": {"instagram": "comet.otter", "x": "", "email": "comet_otter@example.com"},
-		"viewer_relation": "other",
-		"wave_status": "received",
-	},
-}
-
-# Handle that pretends the backend is down, to show the error state
-_BROKEN_HANDLE = "broken_backend"
-
-
-def demo_handles():
-	"""Mock profiles, for the demo index page."""
-	return [(h, p["viewer_relation"], p["wave_status"]) for h, p in _MOCK.items()]
-
-
 # ---------- Reading ----------
 
-def get_profile(handle, as_relation=None):
+def get_profile(user_id, viewer, preview_as=None):
 	"""
-	The profile `handle` as the current viewer may see it.
-	`as_relation` overrides viewer_relation (the demo "View as" toggle).
-	Raises ProfileNotFound or ProfileUnavailable.
+	The profile of `user_id` as the signed-in `viewer` may see it.
+	`preview_as` lets the OWNER preview their page as "connection" or "other";
+	it is ignored for anyone else, so it can never reveal more.
+	Raises ProfileNotFound.
 	"""
-	handle = (handle or "").lower()
-	if handle == _BROKEN_HANDLE:
-		raise ProfileUnavailable("Mock backend failure")
-	if handle not in _MOCK:
-		raise ProfileNotFound(handle)
+	user = db.session.scalar(
+		select(User)
+		.where(User.user_id == user_id)
+		.options(
+			selectinload(User.user_interests)
+			.selectinload(UserInterest.interest)
+			.selectinload(Interest.tags)
+			.selectinload(Tag.categories)
+		)
+	)
+	if user is None:
+		raise ProfileNotFound(user_id)
 
-	profile = copy.deepcopy(_MOCK[handle])
-	real_relation = profile["viewer_relation"]
-	if as_relation in RELATIONS:
-		profile["viewer_relation"] = as_relation
-	relation = profile["viewer_relation"]
+	relation, wave_status = _relation(viewer.user_id, user.user_id)
+	can_preview = relation == "self"
+	if can_preview and preview_as in RELATIONS:
+		relation = preview_as
 
-	# A wave only makes sense between strangers
-	if relation != "other" or real_relation != "other":
-		profile["wave_status"] = "none"
+	profile = to_profile(user)
+	profile["viewer_relation"] = relation
+	profile["wave_status"] = wave_status if relation == "other" else "none"
+	profile["can_preview"] = can_preview
 
-	# Privacy: strip what this viewer must not receive
+	# Privacy: only send what this viewer may see
 	if relation != "self":
 		if not profile["show_year"]:
 			profile["year"] = None
@@ -177,72 +86,69 @@ def get_profile(handle, as_relation=None):
 			profile["bio"] = ""
 	if relation == "other":
 		profile["contacts"] = None
-
 	return profile
 
 
-# ---------- Writing (owner only) ----------
+def to_profile(user):
+	"""Map a backend User row to the profile shape (fields everyone may see first)."""
+	return {
+		"id": user.user_id,
+		"handle": None,  # TODO(backend): no public handle; never use user.username (CIS code)
+		"display_name": (user.display_name or "").strip() or FALLBACK_NAME,
+		"has_display_name": bool((user.display_name or "").strip()),
+		"year": None,  # TODO(backend): no year column
+		"show_year": False,
+		"avatar_colour": _fallback_avatar(user.user_id),  # TODO(backend): no avatar colour column
+		"interests": [_interest(ui.interest) for ui in user.user_interests],
+		"bio": user.bio or "",
+		"bio_published": True,  # TODO(backend): no draft/published column
+		"connection_count": _connection_count(user.user_id),
+		"contacts": {},  # TODO(backend): no contact columns (users.email is the login email, not a contact)
+	}
 
-_SOCIAL_RE = re.compile(r"^[A-Za-z0-9._]{1,30}$")
-_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+def _interest(interest):
+	category = interest.category  # most common category across the interest's tags, or None
+	slug = category_slug(category.category_name) if category else None
+	return {
+		"name": interest.interest_name,
+		"url": f"/interests/{interest.interest_id}",
+		"category_slug": slug,
+		"category": category_style(slug)[0],
+	}
 
 
-def save_profile(handle, form, action="save"):
-	"""
-	Validate and store the owner's edits.
-	`action` is "save", "publish" or "unpublish" (the bio buttons).
-	Returns a list of error messages; an empty list means it saved.
-	"""
-	stored = _MOCK.get(handle)
-	if stored is None:
-		raise ProfileNotFound(handle)
+def _fallback_avatar(user_id):
+	keys = list(AVATAR_COLOURS)
+	return keys[user_id % len(keys)]
 
-	errors = []
-	name = " ".join(form.get("display_name", "").split())
-	if len(name) > NAME_MAX:
-		errors.append(f"Display name must be {NAME_MAX} characters or fewer.")
 
-	year = form.get("year", "")
-	if year not in YEARS and year != "hide":
-		errors.append("Choose a year from the list.")
+def _connection_count(user_id):
+	return db.session.scalar(
+		select(func.count())
+		.select_from(Connection)
+		.where(
+			Connection.status == "accepted",
+			or_(Connection.requester_id == user_id, Connection.addressee_id == user_id),
+		)
+	)
 
-	colour = form.get("avatar_colour", "")
-	if colour not in AVATAR_COLOURS:
-		errors.append("Choose an avatar colour from the palette.")
 
-	bio = form.get("bio", "").strip()
-	if len(bio) > BIO_MAX:
-		errors.append(f"Bio must be {BIO_MAX} characters or fewer.")
-
-	contacts = {}
-	for field, label in (("instagram", "Instagram"), ("x", "X")):
-		value = form.get(field, "").strip().lstrip("@")
-		if value and not _SOCIAL_RE.match(value):
-			errors.append(f"{label} handle can only use letters, numbers, dots and underscores.")
-		contacts[field] = value
-	email = form.get("email", "").strip()
-	if email and not _EMAIL_RE.match(email):
-		errors.append("That email address doesn't look right.")
-	contacts["email"] = email
-
-	if errors:
-		return errors
-
-	stored["display_name"] = name or None
-	if year == "hide":
-		stored["show_year"] = False
-	else:
-		stored["year"], stored["show_year"] = year, True
-	stored["avatar_colour"] = colour
-	stored["contacts"] = contacts
-
-	# A new or changed bio is always a private draft until published
-	if bio != stored["bio"]:
-		stored["bio_published"] = False
-	stored["bio"] = bio
-	if action == "publish":
-		stored["bio_published"] = bool(bio)
-	elif action == "unpublish":
-		stored["bio_published"] = False
-	return []
-
+def _relation(viewer_id, user_id):
+	"""(viewer_relation, wave_status) between the viewer and the profile owner."""
+	if viewer_id == user_id:
+		return "self", "none"
+	row = db.session.scalar(
+		select(Connection).where(
+			or_(
+				(Connection.requester_id == viewer_id) & (Connection.addressee_id == user_id),
+				(Connection.requester_id == user_id) & (Connection.addressee_id == viewer_id),
+			)
+		)
+	)
+	if row is not None and row.status == "accepted":
+		return "connection", "none"
+	if row is not None and row.status == "pending":
+		# Whoever asked first has "waved"
+		return "other", ("sent" if row.requester_id == viewer_id else "received")
+	return "other", "none"
