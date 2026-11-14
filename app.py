@@ -50,6 +50,33 @@ def logout():
 	return "Logged out"
 
 
+@app.route("/register_success")
+def register_success():
+	return """Successfully regiseterd"""
+
+
+@app.get("/register")
+def register():
+	return """<form method=post>
+	  Email: <input name="email"><br>
+	  Password: <input name="password" type=password><br>
+	  <button>Add account</button>
+	</form>"""
+
+
+@app.post("/register")
+def register_post():
+	username = flask.request.form["email"]
+	password = flask.request.form["password"]
+
+	if username is None or not auth.is_user(username):
+		print("true")
+		flask.redirect(flask.url_for("register"))
+
+	auth.register_user(username, password)
+	return flask.redirect(flask.url_for("register_success"))
+
+
 @app.route("/")
 def home():
 	return app.send_static_file("index.html")

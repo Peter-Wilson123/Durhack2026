@@ -2,8 +2,8 @@ import flask_login
 
 
 class User(flask_login.UserMixin):
-	def __init__(self, email, password):
-		self.id = email
+	def __init__(self, username, password):
+		self.id = username
 		self.password = password
 
 
@@ -11,7 +11,11 @@ users = {"test": User("test", "test")}
 
 
 def register_user(username, password):
-	pass
+	users[username] = User(username, password)
+
+
+def is_user(username):
+	return username in users
 
 
 def varify_user(username, password):
