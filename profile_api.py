@@ -98,7 +98,7 @@ def to_profile(user):
 		"has_display_name": bool((user.display_name or "").strip()),
 		"year": None,  # TODO(backend): no year column
 		"show_year": False,
-		"avatar_colour": _fallback_avatar(user.user_id),  # TODO(backend): no avatar colour column
+		"avatar_colour": fallback_avatar(user.user_id),  # TODO(backend): no avatar colour column
 		"interests": [_interest(ui.interest) for ui in user.user_interests],
 		"bio": user.bio or "",
 		"bio_published": True,  # TODO(backend): no draft/published column
@@ -118,7 +118,7 @@ def _interest(interest):
 	}
 
 
-def _fallback_avatar(user_id):
+def fallback_avatar(user_id):
 	keys = list(AVATAR_COLOURS)
 	return keys[user_id % len(keys)]
 

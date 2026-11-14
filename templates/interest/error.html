@@ -1,0 +1,22 @@
+{# Error states for the interest page: unknown interest, or the database failed #}
+{% extends "base.html" %}
+
+{% block title %}Interest unavailable · Superposition{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-page profile-error">
+	{% if kind == "missing" %}
+	<h1>No such interest</h1>
+	<p>We couldn't find that interest. It may have been removed.</p>
+	<p><a class="btn btn-primary" href="/">Find interests</a></p>
+	{% else %}
+	<h1>Couldn't load this interest</h1>
+	<p>Something went wrong on our side. Please try again in a moment.</p>
+	<p><a class="btn btn-primary" href="{{ request.url }}">Try again</a></p>
+	{% endif %}
+</div>
+{% endblock %}

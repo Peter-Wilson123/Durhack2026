@@ -1,0 +1,6 @@
+{# One page of user cards. Rendered inside the grid, and alone for "Load more".
+   data-shown and data-has-more tell interest.js what to do next. #}
+{% for person in people.people %}
+{% include "interest/_user_card.html" %}
+{% endfor %}
+<template class="people-page-info" data-shown="{{ people.shown }}" data-has-more="{{ 'true' if people.has_more else 'false' }}" data-next="{{ people.next_page }}"></template>

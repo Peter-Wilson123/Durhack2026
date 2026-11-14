@@ -7,8 +7,10 @@ Register with `interests.init_app(app)` after the database is set up.
 import flask
 import flask_login
 from sqlalchemy import func, inspect, select
+from sqlalchemy.exc import SQLAlchemyError
 
 import discovery
+import interest_api
 import taxonomy
 from models import Category, Interest, Tag, db
 
@@ -69,12 +71,30 @@ def create_interest():
 
 @bp.get("/interests/<int:interest_id>")
 def view_interest(interest_id):
-	interest = db.get_or_404(Interest, interest_id)
-	return flask.render_template(
-		"interest.html",
-		interest=interest,
-		related=discovery.related_interests(interest),
-	)
+	"""
+	Interest page: details, related interests and who has it (data from interest_api.py).
+	?page=N shows the first N pages of people; with &partial=people it returns
+	only page N's cards, for the "Load more" button.
+	"""
+	viewer = flask_login.current_user
+	if not viewer.is_authenticated:
+		return flask.redirect(flask.url_for("login_get"))
+
+	page = flask.request.args.get("page", 1, type=int)
+	partial = flask.request.args.get("partial") == "people"
+	try:
+		if partial:
+			people = interest_api.get_people(interest_id, viewer, page)
+			return flask.render_template("interest/_people.html", people=people, interest_id=interest_id)
+		data = interest_api.get_interest(interest_id, viewer)
+		people = interest_api.get_people(interest_id, viewer, page, cumulative=True)
+	except interest_api.InterestNotFound:
+		return flask.make_response(flask.render_template("interest/error.html", kind="missing"), 404)
+	except SQLAlchemyError:
+		flask.current_app.logger.exception("Interest page failed")
+		return flask.make_response(flask.render_template("interest/error.html", kind="unavailable"), 503)
+
+	return flask.render_template("interest.html", i=data, people=people)
 
 
 # ---------- Setup ----------

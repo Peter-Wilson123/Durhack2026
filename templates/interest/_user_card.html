@@ -1,0 +1,29 @@
+{# UserCard: avatar, name, optional year and a Wave button. The whole card opens the
+   profile (the name link stretches over it); the Wave button sits above that link. #}
+{% from "profile/_avatar.html" import avatar with context %}
+<article class="user-card">
+	{{ avatar(person.avatar_colour, "md") }}
+	<div class="user-card-text">
+		<h3 class="user-card-name"><a href="{{ person.url }}">{{ person.display_name }}</a></h3>
+		{% if person.handle %}<p class="user-card-handle">@{{ person.handle }}</p>{% endif %}
+		{% if person.year %}<p class="user-card-year">{{ person.year }}</p>{% endif %}
+	</div>
+
+	{% if person.wave_state == "connected" %}
+	<span class="connected-pill">✓ Connected</span>
+	{% else %}
+	{# Same markup as the profile page's Wave button, so static/profile.js handles both #}
+	<div class="wave" data-user="{{ person.id }}">
+		{% if person.wave_state == "sent" %}
+		<button type="button" class="btn btn-sm btn-primary" disabled>Wave sent</button>
+		{% elif person.wave_state == "received" %}
+		<button type="button" class="btn btn-sm btn-primary" data-wave="accept"
+			aria-label="Accept wave from {{ person.display_name }}">Accept wave</button>
+		{% else %}
+		<button type="button" class="btn btn-sm btn-outline-primary" data-wave="send"
+			aria-label="Wave at {{ person.display_name }}">👋 Wave</button>
+		{% endif %}
+		<p class="wave-status" role="status"></p>
+	</div>
+	{% endif %}
+</article>
