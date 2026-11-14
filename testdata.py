@@ -5,14 +5,14 @@ from models import (
     Connection,
     DirectMessage,
     Interest,
-    Location,
     RoomMessage,
     User,
     UserInterest,
     db,
 )
 
-#IMPORTANT THIS IS NOT MEANT TO BE RUN
+# IMPORTANT THIS IS NOT MEANT TO BE RUN
+
 
 def seed_database():
     with app.app_context():
@@ -20,15 +20,7 @@ def seed_database():
         db.drop_all()
         db.create_all()
 
-        # -------------------------------------------------------------------
-        # 1. Locations
-        # -------------------------------------------------------------------
-        durham = Location(city="Durham", country="United Kingdom")
-        edinburgh = Location(city="Edinburgh", country="United Kingdom")
-        bristol = Location(city="Bristol", country="United Kingdom")
-        db.session.add_all([durham, edinburgh, bristol])
-        db.session.flush()
-
+       
         # -------------------------------------------------------------------
         # 2. Users (All passwords set to: password123)
         # -------------------------------------------------------------------
@@ -37,7 +29,6 @@ def seed_database():
             display_name="Alex Mercer",
             email="alex@uni.ac.uk",
             bio="First-year CS student trying to find people who like weird hobbies.",
-            location_id=durham.location_id,
         )
         alex.set_password("password123")
 
@@ -46,7 +37,6 @@ def seed_database():
             display_name="Maya Lin",
             email="maya@uni.ac.uk",
             bio="Botany nerd, darkroom tinkerer, and second-hand bookshop regular.",
-            location_id=durham.location_id,
         )
         maya.set_password("password123")
 
@@ -55,7 +45,6 @@ def seed_database():
             display_name="Liam O'Connor",
             email="liam@uni.ac.uk",
             bio="Weekend trail runner and analog printmaker.",
-            location_id=edinburgh.location_id,
         )
         liam.set_password("password123")
 
@@ -64,7 +53,6 @@ def seed_database():
             display_name="Priya Nair",
             email="priya@uni.ac.uk",
             bio="Collecting obscure translated novellas and mechanical keyboards.",
-            location_id=bristol.location_id,
         )
         priya.set_password("password123")
 
@@ -73,7 +61,6 @@ def seed_database():
             display_name="Samira Vance",
             email="sam@uni.ac.uk",
             bio="Horology enthusiast and student radio host.",
-            location_id=durham.location_id,
         )
         sam.set_password("password123")
 
@@ -229,9 +216,12 @@ def seed_database():
         # 6. Connections (Friendships)
         # -------------------------------------------------------------------
         connections = [
-            Connection(requester_id=alex.user_id, addressee_id=maya.user_id, status="accepted"),
-            Connection(requester_id=liam.user_id, addressee_id=alex.user_id, status="accepted"),
-            Connection(requester_id=priya.user_id, addressee_id=alex.user_id, status="pending"),
+            Connection(requester_id=alex.user_id,
+                       addressee_id=maya.user_id, status="accepted"),
+            Connection(requester_id=liam.user_id,
+                       addressee_id=alex.user_id, status="accepted"),
+            Connection(requester_id=priya.user_id,
+                       addressee_id=alex.user_id, status="pending"),
         ]
         db.session.add_all(connections)
 

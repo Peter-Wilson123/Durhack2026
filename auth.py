@@ -1,84 +1,76 @@
 import flask_login
 from sqlalchemy import or_
+
+
+from sqlalchemy import func
 from models import User, db
 
-#class User(flask_login.UserMixin):
-#	def __init__(self, username, password):
-#		self.id = username
-#		self.password = password
+def load_user(
+    username: str = "",
+    email: str = "",
+    password: str = "",
+) -> User | None:
+    """
+    Looks up a user by username or email and verifies their password.
+    Returns the User object if valid, or None if not found / wrong password.
+    """
+    if not password:
+        return None
 
-
-#User users = {"test": User("test", "test")}
-
-
-
- 
-from sqlalchemy import func
-from models import Location, User, db
-
-
-def register_user(
-    username: str,
-    display_name: str,
-    email: str,
-    password: str,
-    bio: str = "",
-    city: str = "",
-    country: str = "",
-    avatar_url: str = "",
-) -> User:
-    """Creates a new User row in SQLite using the user's form inputs."""
-    clean_username = username.strip().lower()
-    clean_email = email.strip().lower()
-    clean_display_name = display_name.strip() or clean_username
-
-    # Look up existing Location or create a new row in the locations table (3NF)
-    location_id = None
-    clean_city = (city or "").strip()
-    clean_country = (country or "").strip()
-
-    if clean_city and clean_country:
-        location = Location.query.filter(
-            func.lower(Location.city) == clean_city.lower(),
-            func.lower(Location.country) == clean_country.lower(),
-        ).first()
-
-        if not location:
-            location = Location(city=clean_city, country=clean_country)
-            db.session.add(location)
-            db.session.flush()  # Populates location.location_id before commit
-
-        location_id = location.location_id
-
-    new_user = User(
-        username=clean_username,
-        display_name=clean_display_name,
-        email=clean_email,
-        bio=(bio or "").strip(),
-        avatar_url=(avatar_url or "").strip(),
-        location_id=location_id,
-    )
-    new_user.set_password(password)
-
-    db.session.add(new_user)
-    db.session.commit()
-    return new_user
-
-def is_user(email: str, username: str = "") -> bool:
-    """Returns True if an account already exists with this email or username."""
-    clean_email = (email or "").strip().lower()
     clean_username = (username or "").strip().lower()
+    clean_email = (email or "").strip().lower()
 
     conditions = []
-    if clean_email:
-        conditions.append(User.email == clean_email)
-        # Also check against username if only one argument was passed
-        if not clean_username:
-            conditions.append(User.username == clean_email)
     if clean_username:
         conditions.append(User.username == clean_username)
+    if clean_email:
+        conditions.append(User.email == clean_email)
 
     if not conditions:
-        return False
+        return None
 
-    return User.query.filter(or_(*conditions)).first() is not None
+    user = User.query.filter(or_(*conditions)).first()
+
+    if user and user.check_password(password):
+        return user
+
+    return None
+
+def register_user(username: str, email: str, password: str) -> User:
+	"""Creates a new User row in SQLite using the user's form inputs."""
+	clean_username = username.strip().lower()
+	clean_email = email.strip().lower()
+
+	new_user = User(username=clean_username, email=clean_email)
+	new_user.set_password(password)
+
+	db.session.add(new_user)
+	db.session.commit()
+	return new_user
+
+
+def is_user(identifier: str) -> bool:
+	"""Returns True if an account already exists with this email or username."""
+	if not identifier:
+		return False
+	clean_identifier = identifier.strip().lower()
+
+	if "@" in clean_identifier:
+		condition = (User.email == clean_identifier)
+		# Also check against username if only one argument was passed
+
+	else:
+		condition = (User.username == clean_identifier)
+
+	if not conditions:
+		return False
+
+	return User.query.filter(or_(*conditions)).first() is not None
+
+
+def varify_user(identifer, password):
+	pass
+
+
+def get_user():
+	pass
