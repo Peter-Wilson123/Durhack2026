@@ -1,17 +1,118 @@
-<!doctype html>
-<html lang="en">
 {% extends "base.html" %}
 
-{% block title %}
-Home Page
+{% block title %}Find your interests · Superposition{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
 {% endblock %}
 
 {% block content %}
+{# Placeholder data until interests come from the database #}
+{% set categories = [
+	{"key": "physical", "name": "Physical", "interests": ["Going on a walk", "Climbing", "Running", "Rowing", "Football", "Swimming", "Yoga"]},
+	{"key": "academic", "name": "Academic", "interests": ["Gravity studies", "Philosophy", "Astronomy", "Creative writing", "Languages"]},
+	{"key": "electronic", "name": "Electronic", "interests": ["Gaming", "Robotics", "Music production", "Coding", "3D printing"]},
+] %}
+{% set all_interests = categories | map(attribute="interests") | sum(start=[]) %}
+{% set half = (all_interests | length / 2) | round(0, "ceil") | int %}
 
-<h1>Welcome to my website!</h1>
+<div class="home">
 
-<p>This page uses the base template.</p>
+	<!-- 1. Hero -->
+	<section class="hero" aria-labelledby="hero-title">
+		<h1 id="hero-title">Find your interests</h1>
 
+		<form class="hero-search" id="hero-search" role="search">
+			<label class="visually-hidden" for="hero-search-input">Search interests</label>
+			<input class="form-control form-control-lg" id="hero-search-input" type="search"
+				placeholder="Try “climbing” or “astronomy”" autocomplete="off">
+			<button class="btn btn-primary btn-lg" type="submit">Search</button>
+		</form>
+
+		<div class="marquee" aria-label="Popular interests">
+			{% for row in [all_interests[:half], all_interests[half:]] %}
+			<div class="marquee-row {{ 'reverse' if loop.index == 2 }}">
+				<div class="marquee-track">
+					{% for pass in [1, 2] %}
+					{% for name in row %}
+					<button type="button" class="chip" data-interest="{{ name }}" {% if pass == 2 %}aria-hidden="true" tabindex="-1"{% endif %}>{{ name }}</button>
+					{% endfor %}
+					{% endfor %}
+				</div>
+			</div>
+			{% endfor %}
+		</div>
+
+		<div class="hero-actions">
+			<a class="action-card" href="#search">
+				<strong>Browse</strong>
+				<span>See every interest by category</span>
+			</a>
+			<a class="action-card" href="#create">
+				<strong>Add an interest</strong>
+				<span>Start something new</span>
+			</a>
+			<a class="action-card" href="/login">
+				<strong>Sign in</strong>
+				<span>Find people like you</span>
+			</a>
+		</div>
+	</section>
+
+	<!-- 2. Search by category -->
+	<section class="search-section" id="search" aria-labelledby="search-title">
+		<h2 id="search-title">Search</h2>
+
+		<label class="visually-hidden" for="interest-search">Filter interests</label>
+		<input class="form-control form-control-lg search-input" id="interest-search" type="search"
+			placeholder="Filter interests" autocomplete="off">
+
+		<div class="category-grid">
+			{% for cat in categories %}
+			<article class="category-card cat-{{ cat.key }}">
+				<h3>{{ cat.name }}</h3>
+				<ul>
+					{% for name in cat.interests %}
+					<li class="interest" data-name="{{ name | lower }}"><a href="#">{{ name }}</a></li>
+					{% endfor %}
+				</ul>
+				<p class="no-match" hidden>No matches</p>
+			</article>
+			{% endfor %}
+		</div>
+	</section>
+
+	<!-- 3. Not found → create -->
+	<section class="create-section" id="create" aria-labelledby="create-title">
+		<p class="create-query" id="create-query" hidden></p>
+		<h2 id="create-title">Can’t find yours?</h2>
+		<p class="create-lead" id="create-lead">Add it, and others who share it can find you.</p>
+
+		<form class="create-form" method="post" action="/interests/new">
+			<div class="create-name">
+				<label class="form-label" for="interest-name">Name</label>
+				<input class="form-control" id="interest-name" name="interest_name" required>
+			</div>
+
+			<div class="create-desc">
+				<label class="form-label" for="interest-desc">Description</label>
+				<textarea class="form-control" id="interest-desc" name="description" rows="6"
+					placeholder="What is it, and what would you do together?"></textarea>
+			</div>
+
+			<div class="create-tags">
+				<label class="form-label" for="interest-tags">Tags</label>
+				<input class="form-control" id="interest-tags" name="tags" placeholder="physics, outdoors">
+				<ul class="tag-list" id="tag-list" aria-live="polite"></ul>
+			</div>
+
+			<button class="btn btn-primary create-submit" type="submit">Create interest</button>
+		</form>
+	</section>
+
+</div>
 {% endblock %}
 
-</html>
+{% block scripts %}
+<script src="{{ url_for('static', filename='home.js') }}"></script>
+{% endblock %}
