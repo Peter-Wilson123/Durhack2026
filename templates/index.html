@@ -11,11 +11,11 @@
 {% set half = (chips | length / 2) | round(0, "ceil") | int %}
 
 {#
-	One page, three states (set on .home by home.js):
-	  initial – heading, search, suggestions and quick links
-	  search  – search pinned to the top, related-interest groupings, live dropdown
-	  create  – nothing found, so offer to create it
-	Groupings and suggestions come from /api/discover, /api/interests and /api/tags.
+One page, three states (set on .home by home.js):
+initial – heading, search, suggestions and quick links
+search – search pinned to the top, related-interest groupings, live dropdown
+create – nothing found, so offer to create it
+Groupings and suggestions come from /api/discover, /api/interests and /api/tags.
 #}
 <noscript>
 	<style>
@@ -81,14 +81,11 @@
 					<strong>Browse</strong>
 					<span>Explore interests and how they connect</span>
 				</a>
-				<a class="action-card" href="#create" data-go="create">
+				<a class="action-card" href="./create_interest">
 					<strong>Add an interest</strong>
 					<span>Start something new</span>
 				</a>
-				<a class="action-card" href="/login">
-					<strong>Sign in</strong>
-					<span>Find people like you</span>
-				</a>
+
 			</div>
 		</div>
 	</div>
@@ -105,41 +102,8 @@
 		</div>
 	</div>
 
-	<!-- Create: nothing found -->
-	<div class="panel" data-for="create" id="create">
-		<div class="panel-inner">
-			<h2 class="create-title" id="create-title">Not here yet…</h2>
-			<p class="create-lead" id="create-lead">Be the first. Add it below and others can join.</p>
 
-			<form class="create-form" id="create-form" method="post" action="/interests/new">
-				<div class="create-name">
-					<label class="form-label" for="interest-name">Name</label>
-					<input class="form-control" id="interest-name" name="interest_name" maxlength="120" required>
-				</div>
-
-				<div class="create-desc">
-					<label class="form-label" for="interest-desc">Description</label>
-					<textarea class="form-control" id="interest-desc" name="description" rows="6"
-						placeholder="What is it, and what would you do together?"></textarea>
-				</div>
-
-				<div class="create-tags">
-					<label class="form-label" for="tag-entry">Tags <span class="optional">optional</span></label>
-					<div class="tag-input form-control" id="tag-input">
-						<ul class="tag-chips" id="tag-chips" aria-label="Chosen tags"></ul>
-						<input class="tag-entry" id="tag-entry" type="text" placeholder="Add a tag" maxlength="40"
-							role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="tag-suggestions"
-							aria-describedby="tag-help" autocomplete="off">
-						<ul class="tag-suggestions" id="tag-suggestions" role="listbox" aria-label="Tag suggestions" hidden></ul>
-					</div>
-					<p class="form-text" id="tag-help">Tags connect your interest to related ones. Add them now or later.</p>
-					<div id="tag-values"></div>
-				</div>
-
-				<button class="btn btn-primary create-submit" type="submit">Create interest</button>
-			</form>
-		</div>
-	</div>
+</div>
 
 </div>
 {% endblock %}
