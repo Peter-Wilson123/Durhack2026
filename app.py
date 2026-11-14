@@ -7,7 +7,6 @@ from models import (
 	ChatRoom,
 	Connection,
 	Interest,
-	Location,
 	RoomMessage,
 	User,
 	UserInterest,
@@ -89,8 +88,6 @@ def register_post():
     email = flask.request.form.get("email", "").strip()
     password = flask.request.form.get("password", "")
     bio = flask.request.form.get("bio", "").strip()
-    city = flask.request.form.get("city", "").strip()
-    country = flask.request.form.get("country", "").strip()
     avatar_url = flask.request.form.get("avatar_url", "").strip()
 
     # Make sure required fields are filled and not already taken
@@ -106,8 +103,6 @@ def register_post():
         email=email,
         display_name=display_name,
         bio=bio,
-        city=city,
-        country=country,
         avatar_url=avatar_url,
     )
     return flask.redirect(flask.url_for("register_success"))
