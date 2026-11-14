@@ -80,7 +80,7 @@ def login_post():
 		return flask.redirect(flask.url_for("login_get"))
 
 	flask_login.login_user(user)
-	return flask.redirect(flask.url_for("account"))
+	return flask.redirect(flask.url_for("home"))
 
 
 @app.route("/logout")
