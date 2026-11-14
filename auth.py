@@ -52,7 +52,6 @@ def register_user(
         username=clean_username,
         email=clean_email,
 
-
     )
     new_user.set_password(password)
 

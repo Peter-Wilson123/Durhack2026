@@ -93,7 +93,7 @@ def register():
 		if password != confirm_password:
 			return flask.render_template("register.html")
 
-		if auth.is_user(username, email):
+		if auth.is_user(email, username):
 			return flask.render_template("register.html")
 
 		auth.register_user(
