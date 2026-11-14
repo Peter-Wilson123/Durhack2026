@@ -9,9 +9,9 @@ User Search
 <h1>Search for users with similar interests</h1>
 
 <form method="POST">
-    <input type="text" name="search" placeholder="Enter name, email or phone..." value="{{ search_term }}">
+	<input type="text" name="search" placeholder="username or email" value="{{ search_term }}">
 
-    <button type="submit">Search</button>
+	<button type="submit">Search</button>
 </form>
 
 
@@ -22,21 +22,21 @@ User Search
 <h3>Search Results</h3>
 
 <table>
-    <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Phone</th>
-    </tr>
+	<tr>
+		<th>ID</th>
+		<th>Name</th>
+		<th>Email</th>
+		<th>Phone</th>
+	</tr>
 
-    {% for person in results %}
-    <tr>
-        <td>{{ person.id }}</td>
-        <td>{{ person.name }}</td>
-        <td>{{ person.email }}</td>
-        <td>{{ person.phone }}</td>
-    </tr>
-    {% endfor %}
+	{% for person in results %}
+	<tr>
+		<td>{{ person.id }}</td>
+		<td>{{ person.name }}</td>
+		<td>{{ person.email }}</td>
+		<td>{{ person.phone }}</td>
+	</tr>
+	{% endfor %}
 
 </table>
 

@@ -43,11 +43,13 @@ def _load(handle, as_relation=None):
 		return profile_api.get_profile(handle, as_relation), None
 	except profile_api.ProfileNotFound:
 		return None, flask.make_response(
-			flask.render_template("profile/error.html", handle=handle, kind="missing"), 404
+			flask.render_template("profile/error.html",
+			                      handle=handle, kind="missing"), 404
 		)
 	except profile_api.ProfileUnavailable:
 		return None, flask.make_response(
-			flask.render_template("profile/error.html", handle=handle, kind="unavailable"), 503
+			flask.render_template("profile/error.html",
+			                      handle=handle, kind="unavailable"), 503
 		)
 
 
