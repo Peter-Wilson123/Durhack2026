@@ -9,10 +9,7 @@ def fake_user():
         is_authenticated = False
     return {"current_user": Anonymous()}
 
-@app.route("/")
-def home():
-    return flask.render_template("index.html")
-
+# The home page needs the database and APIs: run app.py to see it
 @app.route("/login")
 def login():
     return flask.render_template("login.html")

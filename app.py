@@ -1,6 +1,8 @@
 import flask
 import flask_login
 import auth
+import discovery
+import interests
 import search
 from models import (
 	Category,
@@ -37,6 +39,9 @@ def unauthorized():
 
 with app.app_context():
 	db.create_all()
+
+# Interest discovery, tags and interest pages (see interests.py)
+interests.init_app(app)
 
 
 @app.get("/account")
@@ -138,7 +143,7 @@ with app.app_context():
 
 @app.route("/")
 def home():
-	return flask.render_template("index.html")
+	return flask.render_template("index.html", chips=discovery.suggested_names(16))
 
 
 if __name__ == "__main__":

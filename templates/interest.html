@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}{{ interest.interest_name }} · Superposition{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="interest-page">
+	<a class="back-link" href="/">← Find more interests</a>
+
+	<h1>{{ interest.interest_name }}</h1>
+
+	{% if interest.categories %}
+	<p class="interest-cats">{{ interest.categories | map(attribute="category_name") | join(" · ") }}</p>
+	{% endif %}
+
+	{% if interest.description %}
+	<p class="interest-desc">{{ interest.description }}</p>
+	{% endif %}
+
+	{% if interest.tags %}
+	<ul class="tag-list" aria-label="Tags">
+		{% for tag in interest.tags %}
+		<li><a href="/?q={{ tag.tag_name | urlencode }}">#{{ tag.tag_name }}</a></li>
+		{% endfor %}
+	</ul>
+	{% else %}
+	<p class="interest-untagged">No tags yet. Tags help people find this through related interests.</p>
+	{% endif %}
+
+	{% if related %}
+	<section class="interest-related" aria-labelledby="related-title">
+		<h2 id="related-title">You might also like</h2>
+		<ul class="chip-list">
+			{% for other in related %}
+			<li><a class="chip" href="/interests/{{ other.interest_id }}">{{ other.interest_name }}</a></li>
+			{% endfor %}
+		</ul>
+	</section>
+	{% endif %}
+</div>
+{% endblock %}

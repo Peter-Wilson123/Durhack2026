@@ -75,14 +75,68 @@ class User(UserMixin, db.Model):
 		return check_password_hash(self.password_hash, password)
 
 
+# Category -> Tags -> Interests
+# A tag can sit in several categories, and an interest can have any number of
+# tags (including none). Interests reach categories only through their tags.
+
+tag_categories = db.Table(
+	"tag_categories",
+	db.Column("tag_id", db.Integer, db.ForeignKey("tags.tag_id"), primary_key=True),
+	db.Column(
+		"category_id", db.Integer, db.ForeignKey("categories.category_id"), primary_key=True
+	),
+)
+
+interest_tags = db.Table(
+	"interest_tags",
+	db.Column(
+		"interest_id", db.Integer, db.ForeignKey("interests.interest_id"), primary_key=True
+	),
+	db.Column("tag_id", db.Integer, db.ForeignKey("tags.tag_id"), primary_key=True),
+)
+
+
 class Category(db.Model):
+	"""Broad, curated field of knowledge or activity. Managed by seed data, not users."""
+
 	__tablename__ = "categories"
 
 	category_id = db.Column(db.Integer, primary_key=True)
 	category_name = db.Column(db.String(100), unique=True, nullable=False)
 	description = db.Column(db.Text, default="")
 
-	interests = db.relationship("Interest", back_populates="category")
+	tags = db.relationship("Tag", secondary=tag_categories, back_populates="categories")
+
+	@property
+	def interests(self):
+		"""Interests reached through this category's tags."""
+		seen = {}
+		for tag in self.tags:
+			for interest in tag.interests:
+				seen[interest.interest_id] = interest
+		return list(seen.values())
+
+
+class Tag(db.Model):
+	"""Specific, user-extensible descriptor such as "telescopes" or "hema"."""
+
+	__tablename__ = "tags"
+
+	tag_id = db.Column(db.Integer, primary_key=True)
+	# Stored normalised: lower case, single spaces (see normalise_tag)
+	tag_name = db.Column(db.String(40), unique=True, nullable=False)
+	created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
+
+	categories = db.relationship(
+		"Category", secondary=tag_categories, back_populates="tags"
+	)
+	interests = db.relationship(
+		"Interest", secondary=interest_tags, back_populates="tags"
+	)
+
+
+def normalise_tag(name: str) -> str:
+	return " ".join((name or "").strip().lower().lstrip("#").split())[:40]
 
 
 class Interest(db.Model):
@@ -92,16 +146,15 @@ class Interest(db.Model):
 	interest_name = db.Column(db.String(120), unique=True, nullable=False)
 	description = db.Column(db.Text, default="")
 	cover_image_url = db.Column(db.String(255), default="")
-	category_id = db.Column(
-		db.Integer, db.ForeignKey("categories.category_id"), nullable=False
-	)
 	# NULL = system-seeded interest; populated = user-created interest
 	created_by_user_id = db.Column(
 		db.Integer, db.ForeignKey("users.user_id"), nullable=True
 	)
 	created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
 
-	category = db.relationship("Category", back_populates="interests")
+	tags = db.relationship(
+		"Tag", secondary=interest_tags, back_populates="interests", order_by="Tag.tag_name"
+	)
 	creator = db.relationship("User", back_populates="created_interests")
 	user_interests = db.relationship(
 		"UserInterest", back_populates="interest", cascade="all, delete-orphan"
@@ -112,6 +165,21 @@ class Interest(db.Model):
 		uselist=False,
 		cascade="all, delete-orphan",
 	)
+
+	@property
+	def categories(self):
+		"""Categories reached through this interest's tags, most common first."""
+		counts = {}
+		for tag in self.tags:
+			for cat in tag.categories:
+				counts[cat] = counts.get(cat, 0) + 1
+		return sorted(counts, key=lambda c: (-counts[c], c.category_name))
+
+	@property
+	def category(self):
+		"""Main category (or None for untagged interests). Kept for older templates."""
+		cats = self.categories
+		return cats[0] if cats else None
 
 
 class UserInterest(db.Model):

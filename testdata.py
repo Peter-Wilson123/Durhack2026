@@ -1,6 +1,7 @@
 from app import app
+from discovery import get_or_create_tags
+from interests import seed_taxonomy
 from models import (
-    Category,
     ChatRoom,
     Connection,
     DirectMessage,
@@ -68,26 +69,9 @@ def seed_database():
         db.session.flush()
 
         # -------------------------------------------------------------------
-        # 3. Categories
+        # 3. Categories and tags (from taxonomy.py)
         # -------------------------------------------------------------------
-        cat_nature = Category(
-            category_name="Urban Nature & Ecology",
-            description="Foraging, field biology, and micro-ecosystems.",
-        )
-        cat_crafts = Category(
-            category_name="Analog & Historical Crafts",
-            description="Pre-digital photography, horology, and restoration.",
-        )
-        cat_lit = Category(
-            category_name="Obscure Literature & Lore",
-            description="Out-of-print books, micro-presses, and niche folklore.",
-        )
-        cat_sound = Category(
-            category_name="Experimental Sound & Tech",
-            description="Field recording, synth building, and vintage hardware.",
-        )
-        db.session.add_all([cat_nature, cat_crafts, cat_lit, cat_sound])
-        db.session.flush()
+        seed_taxonomy()
 
         # -------------------------------------------------------------------
         # 4. Interests (Standard + User-Created)
@@ -96,40 +80,40 @@ def seed_database():
         i_mycology = Interest(
             interest_name="Urban Mycology & Spore Printing",
             description="Identifying wild fungi in city parks and making spore prints on glass.",
-            category_id=cat_nature.category_id,
+            tags=get_or_create_tags(["mycology", "foraging", "botany", "nature"]),
             created_by_user_id=None,
         )
         i_cyanotype = Interest(
             interest_name="Cyanotype Sun Printing",
             description="19th-century Prussian blue photographic printing using UV sunlight.",
-            category_id=cat_crafts.category_id,
+            tags=get_or_create_tags(["printmaking", "film photography", "botany"]),
             created_by_user_id=None,
         )
         i_translated_novellas = Interest(
             interest_name="1970s Japanese Surrealist Novellas",
             description="Reading and discussing short, dreamlike post-war fiction.",
-            category_id=cat_lit.category_id,
+            tags=get_or_create_tags(["fiction", "japanese", "reading", "translation"]),
             created_by_user_id=None,
         )
         i_watchmaking = Interest(
             interest_name="Mechanical Watch Escapement Tuning",
             description="Disassembling and regulating vintage wind-up wristwatches.",
-            category_id=cat_crafts.category_id,
+            tags=get_or_create_tags(["watchmaking", "mechanics", "restoration", "craftsmanship"]),
             created_by_user_id=None,
         )
         i_field_recording = Interest(
             interest_name="Hydrophone & Contact-Mic Field Recording",
             description="Capturing underwater river sounds and bridge vibrations.",
-            category_id=cat_sound.category_id,
+            tags=get_or_create_tags(["field recording", "music production", "nature"]),
             created_by_user_id=None,
         )
 
-        # User-created interest (triggers Category-based recommendation rule)
+        # User-created interest (related to others through shared tags)
         i_sundials = Interest(
             interest_name="Medieval Sundial Restoration",
             description="Mapping and calculating angles on historic stone church sundials.",
-            category_id=cat_crafts.category_id,
-            created_by_user_id=alex.user_id,
+            tags=get_or_create_tags(["medieval history", "heritage", "restoration", "astronomy"]),
+            creator=alex,
         )
 
         db.session.add_all([
