@@ -184,7 +184,7 @@ All of these are marked `TODO(backend)` in the code.
 | public `handle` | Profiles live at `/u/<user_id>`. No @handle is shown. | `profiles.py`, `profile_api.py` |
 | `display_name` empty | "Durham student" (never the username) | `profile_api.FALLBACK_NAME` |
 | `year` | Not shown | `profile_api.to_profile` |
-| `avatar_colour` | Picked from the palette by `user_id` | `profile_api._fallback_avatar` |
+| `avatar_colour` | Picked from the palette by `user_id` | `profile_api.fallback_avatar` |
 | `bio_published` | Treated as published, because bios are already public on `/view` | `profile_api.to_profile` |
 | contacts | Empty for self and connections ("No contact details added yet"). `None`, so locked, for everyone else. | `profile_api.to_profile` and `get_profile` |
 | update endpoint | Edit page previews changes, but its save and publish buttons are disabled | `templates/profile/edit.html` |
@@ -316,3 +316,19 @@ setting.
 5. **Interest slugs:** a unique slug column, if the URLs should be `/interest/<slug>`.
 6. The earlier gaps still apply: handle, year, avatar colour, wave endpoints, and the
    password check.
+
+### Testing the interest page locally
+
+After `python testdata.py`, sign in as `alex@uni.ac.uk` with the password `password123`.
+
+| Interest | What it shows |
+|---|---|
+| **Urban Mycology & Spore Printing** | 3 interested, including you. Maya and Liam show as **Connected**. |
+| **Cyanotype Sun Printing** | Maya and Liam are connected, and Priya shows **Accept wave** because she waved at you. You don't have this interest. |
+| Any taxonomy interest, e.g. `/interests/1` | The empty state |
+
+Find an interest's ID from its link on the home page, or in the profile pills.
+`/interests/99999` shows the not-found page.
+
+"Load more" appears once more than 12 people have an interest. The seed data has at most
+3, so add users for testing, but only in a copy of the database, not in `testdata.py`.
