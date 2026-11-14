@@ -6,6 +6,7 @@ import interests
 import profiles
 import search
 import find_new_interest
+import user_account
 from models import (
 	Category,
 	ChatRoom,
@@ -149,6 +150,20 @@ def search_getpost():
 
 with app.app_context():
 	db.create_all()
+ 
+ 
+ 
+@app.post("/update-account")
+@flask_login.login_required
+def update_account():
+    user_account.update_user_account(
+        user=flask_login.current_user,
+        new_username=flask.request.form.get("new-username", ""),
+        new_bio=flask.request.form.get("new-bio", ""),
+        new_interests=flask.request.form.get("new-interests", ""),
+        remove_interests=flask.request.form.get("remove-interests", ""),
+    )
+    return flask.redirect(flask.url_for("account"))
 
 
 @app.get("/find-new-interest")
