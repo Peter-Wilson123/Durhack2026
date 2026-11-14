@@ -2,6 +2,17 @@ import flask
 
 app = flask.Flask(__name__)
 
+# base.html checks current_user; pretend nobody is signed in
+@app.context_processor
+def fake_user():
+    class Anonymous:
+        is_authenticated = False
+    return {"current_user": Anonymous()}
+
+@app.route("/")
+def home():
+    return flask.render_template("index.html")
+
 @app.route("/login")
 def login():
     return flask.render_template("login.html")

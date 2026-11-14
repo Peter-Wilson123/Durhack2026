@@ -1,17 +1,146 @@
-<!doctype html>
-<html lang="en">
 {% extends "base.html" %}
 
-{% block title %}
-Home Page
+{% block title %}Find your interests · Superposition{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
 {% endblock %}
 
 {% block content %}
+{# Placeholder data until interests come from the database #}
+{% set categories = [
+	{"key": "physical", "name": "Physical", "interests": ["Going on a walk", "Climbing", "Running", "Rowing", "Football", "Swimming", "Yoga"]},
+	{"key": "academic", "name": "Academic", "interests": ["Gravity studies", "Philosophy", "Astronomy", "Creative writing", "Languages"]},
+	{"key": "electronic", "name": "Electronic", "interests": ["Gaming", "Robotics", "Music production", "Coding", "3D printing"]},
+] %}
+{% set all_interests = categories | map(attribute="interests") | sum(start=[]) %}
+{% set half = (all_interests | length / 2) | round(0, "ceil") | int %}
 
-<h1>Welcome to my website!</h1>
+{#
+	One page, three states (set on .home by home.js):
+	  initial – heading, search, chips and cards
+	  search  – search pinned to the top, categories shown, live dropdown
+	  create  – query found nothing, so offer to create it
+	Without JavaScript every panel is shown.
+#}
+<noscript>
+	<style>.home .panel { grid-template-rows: 1fr !important; opacity: 1 !important; visibility: visible !important; }</style>
+</noscript>
+<div class="home" id="home" data-state="initial">
 
-<p>This page uses the base template.</p>
+	<div class="panel" data-for="initial">
+		<div class="panel-inner">
+			<h1 class="home-title">Find your interests</h1>
+		</div>
+	</div>
 
+	<form class="search-bar" id="search-form" role="search" autocomplete="off">
+		<label class="visually-hidden" for="search-input">Search interests</label>
+		<div class="search-field">
+			<svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+				stroke-width="2" stroke-linecap="round" aria-hidden="true">
+				<circle cx="11" cy="11" r="7" />
+				<path d="m20 20-3.5-3.5" />
+			</svg>
+			<input class="form-control form-control-lg" id="search-input" type="text"
+				placeholder="Try ‘climbing’ or ‘astronomy’"
+				role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-results">
+			<button class="search-close" id="search-close" type="button" aria-label="Close search">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+					stroke-linecap="round" aria-hidden="true">
+					<path d="M6 6l12 12M18 6 6 18" />
+				</svg>
+			</button>
+			<ul class="search-results" id="search-results" role="listbox" aria-label="Matching interests" hidden></ul>
+		</div>
+		<p class="visually-hidden" id="search-status" aria-live="polite"></p>
+	</form>
+
+	<!-- Initial: suggestions and quick links -->
+	<div class="panel" data-for="initial">
+		<div class="panel-inner">
+			<div class="marquee" aria-label="Popular interests">
+				{% for row in [all_interests[:half], all_interests[half:]] %}
+				<div class="marquee-row {{ 'reverse' if loop.index == 2 }}">
+					<div class="marquee-track">
+						{% for pass in [1, 2] %}
+						{% for name in row %}
+						<button type="button" class="chip" data-interest="{{ name }}" {% if pass == 2 %}aria-hidden="true" tabindex="-1"{% endif %}>{{ name }}</button>
+						{% endfor %}
+						{% endfor %}
+					</div>
+				</div>
+				{% endfor %}
+			</div>
+
+			<div class="hero-actions">
+				<a class="action-card" href="#browse" data-go="search">
+					<strong>Browse</strong>
+					<span>See every interest by category</span>
+				</a>
+				<a class="action-card" href="#create" data-go="create">
+					<strong>Add an interest</strong>
+					<span>Start something new</span>
+				</a>
+				<a class="action-card" href="/login">
+					<strong>Sign in</strong>
+					<span>Find people like you</span>
+				</a>
+			</div>
+		</div>
+	</div>
+
+	<!-- Search: every interest by category -->
+	<div class="panel" data-for="search" id="browse">
+		<div class="panel-inner">
+			<div class="category-grid">
+				{% for cat in categories %}
+				<section class="category-card cat-{{ cat.key }}" aria-labelledby="cat-{{ cat.key }}">
+					<h2 id="cat-{{ cat.key }}">{{ cat.name }}</h2>
+					<ul>
+						{% for name in cat.interests %}
+						<li><a class="interest" href="/interests/{{ name | lower | replace(' ', '-') }}"
+								data-category="{{ cat.key }}" data-category-name="{{ cat.name }}">{{ name }}</a></li>
+						{% endfor %}
+					</ul>
+				</section>
+				{% endfor %}
+			</div>
+		</div>
+	</div>
+
+	<!-- Create: nothing matched -->
+	<div class="panel" data-for="create" id="create">
+		<div class="panel-inner">
+			<h2 class="create-title" id="create-title">Not here yet…</h2>
+			<p class="create-lead" id="create-lead">Be the first. Add it below and others can join.</p>
+
+			<form class="create-form" method="post" action="/interests/new">
+				<div class="create-name">
+					<label class="form-label" for="interest-name">Name</label>
+					<input class="form-control" id="interest-name" name="interest_name" required>
+				</div>
+
+				<div class="create-desc">
+					<label class="form-label" for="interest-desc">Description</label>
+					<textarea class="form-control" id="interest-desc" name="description" rows="6"
+						placeholder="What is it, and what would you do together?"></textarea>
+				</div>
+
+				<div class="create-tags">
+					<label class="form-label" for="interest-tags">Tags</label>
+					<input class="form-control" id="interest-tags" name="tags" placeholder="physics, outdoors">
+					<ul class="tag-list" id="tag-list" aria-live="polite"></ul>
+				</div>
+
+				<button class="btn btn-primary create-submit" type="submit">Create interest</button>
+			</form>
+		</div>
+	</div>
+
+</div>
 {% endblock %}
 
-</html>
+{% block scripts %}
+<script src="{{ url_for('static', filename='home.js') }}"></script>
+{% endblock %}
