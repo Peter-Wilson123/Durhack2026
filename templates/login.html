@@ -9,9 +9,16 @@
 			<h1 class="h3 mb-4">Sign in</h1>
 
 			<form method="post">
+				<p class="text-muted small mb-3" id="signin-help">
+					This site is for Durham students only. Please use your student @durham.ac.uk address.
+				</p>
 				<div class="mb-3">
-					<label for="identifier" class="form-label">CIS code or username</label>
-					<input type="text" class="form-control" id="identifier" name="identifier" required>
+					<!-- The backend accepts an email here (field name "identifier"). We ask for the email,
+					     not the CIS code, so the CIS code never has to be typed into or shown by this site.
+					     No email-format check here: the backend decides who may sign in. -->
+					<label for="identifier" class="form-label">Durham student email</label>
+					<input type="email" class="form-control" id="identifier" name="identifier" autocomplete="email"
+						placeholder="name@durham.ac.uk" aria-describedby="signin-help" required>
 				</div>
 
 				<div class="mb-3">
