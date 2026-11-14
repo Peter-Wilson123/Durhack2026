@@ -1,17 +1,43 @@
 import flask
 import flask_login
-import auth
+
+
+from models import (
+	Category,
+	ChatRoom,
+	Connection,
+	Interest,
+	Location,
+	RoomMessage,
+	User,
+	UserInterest,
+	db,
+)
 
 app = flask.Flask(__name__)
-app.secret_key = "super secret string"  # Change this!
+app.config["SECRET_KEY"] = "change-this-hackathon-secret"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db.init_app(app)
+
 
 login_manager = flask_login.LoginManager()
 login_manager.init_app(app)
 
 
 @login_manager.user_loader
-def user_loader(id):
-	return auth.get_user(id)
+def load_user(user_id):
+	return db.session.get(User, int(user_id))
+
+
+@login_manager.unauthorized_handler
+def unauthorized():
+	return flask.jsonify({"error": "Authentication required"}), 401
+
+
+with app.app_context():
+	db.create_all()
 
 
 @app.get("/login")
@@ -40,7 +66,7 @@ def login_post():
 def protected():
 	return flask.render_template_string(
             "Logged in as: {{ user.id }}",
-          		user=flask_login.current_user
+            user=flask_login.current_user
         )
 
 
@@ -76,8 +102,10 @@ def register_post():
 	auth.register_user(username, password)
 	return flask.redirect(flask.url_for("register_success"))
 
+
 with app.app_context():
-    db.create_all()
+	db.create_all()
+
 
 @app.route("/")
 def home():
