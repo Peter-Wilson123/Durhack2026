@@ -27,7 +27,7 @@ login_manager.init_app(app)
 
 @login_manager.user_loader
 def user_loader(user_id):
-    return db.session.get(User, int(user_id))
+    return db.session.get(User, user_id)
 
 
 with app.app_context():
@@ -49,16 +49,17 @@ def login_get():
 
 @app.post("/login")
 def login_post():
-	identifier = flask.request.form["email"]
-	password = flask.request.form["password"]
+    login_input = flask.request.form.get("identifier", "").strip()
+    password = flask.request.form.get("password", "")
 
-	if identifier is None or not auth.varify_user(identifier, password):
-		return flask.redirect(flask.url_for("login_get"))
+    # Matches either username (CIS code) or email in the database
+    user = auth.load_user(username=login_input,
+                          email=login_input, password=password)
+    if not user:
+        return flask.redirect(flask.url_for("login_get"))
 
-	flask_login.login_user(auth.get_user(identifier))
-	return flask.redirect(flask.url_for("protected"))
-
-# LOGOUT
+    flask_login.login_user(user)
+    return flask.redirect(flask.url_for("account"))
 
 
 @app.route("/logout")
