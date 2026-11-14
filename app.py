@@ -26,49 +26,45 @@ login_manager.init_app(app)
 
 
 @login_manager.user_loader
-def load_user(user_id):
-	return db.session.get(User, user_id)
-
-
-@login_manager.unauthorized_handler
-def unauthorized():
-	return flask.jsonify({"error": "Authentication required"}), 401
+def user_loader(user_id):
+    return db.session.get(User, int(user_id))
 
 
 with app.app_context():
-	db.create_all()
+    db.create_all()
 
 
 @app.get("/login")
 def login_get():
-	return flask.render_template("login.html")
+    return flask.render_template("login.html")
 
 
 @app.post("/login")
 def login_post():
-	username = flask.request.form["email"]
-	password = flask.request.form["password"]
+    login_input = flask.request.form.get("identifier", "").strip()
+    password = flask.request.form.get("password", "")
 
-	if username is None or not auth.varify_user(username, password):
-		return flask.redirect(flask.url_for("login_get"))
+    # Matches either username (CIS code) or email in the database
+    user = auth.load_user(username=login_input, email=login_input, password=password)
+    if not user:
+        return flask.redirect(flask.url_for("login_get"))
 
-	flask_login.login_user(auth.get_user(username))
-	return flask.redirect(flask.url_for("protected"))
-
+    flask_login.login_user(user)
+    return flask.redirect(flask.url_for("protected"))
 
 @app.route("/protected")
 @flask_login.login_required
 def protected():
-	return flask.render_template_string(
-            "Logged in as: {{ user.id }}",
-            user=flask_login.current_user
-        )
+    return flask.render_template_string(
+        "Logged in as: {{ user.username }} (ID: {{ user.user_id }})",
+        user=flask_login.current_user,
+    )
 
 
 @app.route("/logout")
 def logout():
-	flask_login.logout_user()
-	return "Logged out"
+    flask_login.logout_user()
+    return flask.redirect(flask.url_for("login_get"))
 
 
 @app.route("/register_success")
