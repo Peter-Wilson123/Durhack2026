@@ -2,17 +2,7 @@ import flask_login
 from sqlalchemy import or_
 from models import User, db
 
-#class User(flask_login.UserMixin):
-#	def __init__(self, username, password):
-#		self.id = username
-#		self.password = password
 
-
-#User users = {"test": User("test", "test")}
-
-
-
- 
 from sqlalchemy import func
 from models import Location, User, db
 
@@ -63,6 +53,7 @@ def register_user(
     db.session.add(new_user)
     db.session.commit()
     return new_user
+
 
 def is_user(email: str, username: str = "") -> bool:
     """Returns True if an account already exists with this email or username."""

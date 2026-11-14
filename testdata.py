@@ -12,7 +12,8 @@ from models import (
     db,
 )
 
-#IMPORTANT THIS IS NOT MEANT TO BE RUN
+# IMPORTANT THIS IS NOT MEANT TO BE RUN
+
 
 def seed_database():
     with app.app_context():
@@ -229,9 +230,12 @@ def seed_database():
         # 6. Connections (Friendships)
         # -------------------------------------------------------------------
         connections = [
-            Connection(requester_id=alex.user_id, addressee_id=maya.user_id, status="accepted"),
-            Connection(requester_id=liam.user_id, addressee_id=alex.user_id, status="accepted"),
-            Connection(requester_id=priya.user_id, addressee_id=alex.user_id, status="pending"),
+            Connection(requester_id=alex.user_id,
+                       addressee_id=maya.user_id, status="accepted"),
+            Connection(requester_id=liam.user_id,
+                       addressee_id=alex.user_id, status="accepted"),
+            Connection(requester_id=priya.user_id,
+                       addressee_id=alex.user_id, status="pending"),
         ]
         db.session.add_all(connections)
 
