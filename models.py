@@ -23,7 +23,7 @@ class Location(db.Model):
 
 	users = db.relationship("User", back_populates="location")
 
-
+#User class will be used to interact with the database and the website
 class User(UserMixin, db.Model):
 	__tablename__ = "users"
 
@@ -34,7 +34,6 @@ class User(UserMixin, db.Model):
 	password_hash = db.Column(db.String(256), nullable=False)
 	bio = db.Column(db.Text, default="")
 	avatar_url = db.Column(db.String(255), default="")
-	graduation_year = db.Column(db.Integer, nullable=True)
 	location_id = db.Column(
 		db.Integer, db.ForeignKey("locations.location_id"), nullable=True
 	)

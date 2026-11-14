@@ -1,27 +1,84 @@
 import flask_login
+from sqlalchemy import or_
+from models import User, db
+
+#class User(flask_login.UserMixin):
+#	def __init__(self, username, password):
+#		self.id = username
+#		self.password = password
 
 
-class User(flask_login.UserMixin):
-	def __init__(self, username, password):
-		self.id = username
-		self.password = password
+#User users = {"test": User("test", "test")}
 
 
-users = {"test": User("test", "test")}
+
+ 
+from sqlalchemy import func
+from models import Location, User, db
 
 
-def register_user(username, password):
-	users[username] = User(username, password)
+def register_user(
+    username: str,
+    display_name: str,
+    email: str,
+    password: str,
+    bio: str = "",
+    city: str = "",
+    country: str = "",
+    avatar_url: str = "",
+) -> User:
+    """Creates a new User row in SQLite using the user's form inputs."""
+    clean_username = username.strip().lower()
+    clean_email = email.strip().lower()
+    clean_display_name = display_name.strip() or clean_username
 
+    # Look up existing Location or create a new row in the locations table (3NF)
+    location_id = None
+    clean_city = (city or "").strip()
+    clean_country = (country or "").strip()
 
-def is_user(username):
-	return username in users
+    if clean_city and clean_country:
+        location = Location.query.filter(
+            func.lower(Location.city) == clean_city.lower(),
+            func.lower(Location.country) == clean_country.lower(),
+        ).first()
 
+        if not location:
+            location = Location(city=clean_city, country=clean_country)
+            db.session.add(location)
+            db.session.flush()  # Populates location.location_id before commit
 
-def varify_user(username, password):
-	if users[username].password == password:
-		return users[username]
+        location_id = location.location_id
 
+    new_user = User(
+        username=clean_username,
+        display_name=clean_display_name,
+        email=clean_email,
+        bio=(bio or "").strip(),
+        avatar_url=(avatar_url or "").strip(),
+        location_id=location_id,
+    )
+    new_user.set_password(password)
 
-def get_user(username):
-	return users[username]
+    db.session.add(new_user)
+    db.session.commit()
+    return new_user
+
+def is_user(email: str, username: str = "") -> bool:
+    """Returns True if an account already exists with this email or username."""
+    clean_email = (email or "").strip().lower()
+    clean_username = (username or "").strip().lower()
+
+    conditions = []
+    if clean_email:
+        conditions.append(User.email == clean_email)
+        # Also check against username if only one argument was passed
+        if not clean_username:
+            conditions.append(User.username == clean_email)
+    if clean_username:
+        conditions.append(User.username == clean_username)
+
+    if not conditions:
+        return False
+
+    return User.query.filter(or_(*conditions)).first() is not None
