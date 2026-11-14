@@ -65,12 +65,12 @@ def login_get():
 
 @app.post("/login")
 def login_post():
-	login_input = flask.request.form.get("identifier", "").strip()
+	identifier = flask.request.form.get("identifier", "").strip()
 	password = flask.request.form.get("password", "")
 
 	# Matches either username (CIS code) or email in the database
-	user = auth.load_user(username=login_input,
-                       email=login_input, password=password)
+	user = auth.load_user(username=identifier,
+                       email=identifier, password=password)
 	if not user:
 		return flask.redirect(flask.url_for("login_get"))
 
@@ -123,36 +123,10 @@ def register():
 	return flask.render_template("register.html")
 
 
-@app.route("/search", methods=["GET", "POST"])
-def search_getpost():
-
-	results = []
-	search_term = ""
-
-	if flask.request.method == "POST":
-
-		search_term = flask.request.form.get("search", "").strip()
-
-	exclude_id = (
-            flask_login.current_user.user_id
-            if flask_login.current_user.is_authenticated
-            else None
-        )
-	users = search.find_users_by_interest(
-            search_term, exclude_user_id=exclude_id)
-	print(users)
-	return flask.render_template(
-            "search.html",
-            results=users,
-            search_term=search_term
-	)
-
-
 with app.app_context():
 	db.create_all()
- 
- 
- 
+
+
 @app.post("/update-account")
 @flask_login.login_required
 def update_account():
