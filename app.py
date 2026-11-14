@@ -76,6 +76,8 @@ def register_post():
 	auth.register_user(username, password)
 	return flask.redirect(flask.url_for("register_success"))
 
+with app.app_context():
+    db.create_all()
 
 @app.route("/")
 def home():
