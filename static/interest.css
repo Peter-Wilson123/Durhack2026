@@ -55,8 +55,31 @@
     color: #fff;
 }
 
-.interest-toggle[aria-disabled="true"] {
-    cursor: not-allowed;
+.interest-toggle:hover,
+.interest-toggle:focus-visible {
+    background: var(--cat-bg);
+    color: var(--cat-fg);
+}
+
+.interest-toggle[aria-pressed="true"]:hover,
+.interest-toggle[aria-pressed="true"]:focus-visible {
+    background: var(--cat-fg);
+    color: #fff;
+    box-shadow: 0 0 0 3px var(--cat-bg);
+}
+
+.interest-toggle:disabled {
+    opacity: .6;
+}
+
+.interest-edit {
+    margin-left: auto;
+}
+
+.interest-edit-note {
+    margin: .5rem 0 0;
+    color: var(--muted) !important;
+    font-size: .875rem;
 }
 
 .interest-toggle-label {

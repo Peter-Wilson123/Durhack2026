@@ -16,6 +16,7 @@ get_interest(interest_id, viewer) returns:
 	related                  [{"name", "url", "category", "category_slug"}]
 	interested_count         everyone with this interest, counted on the server
 	viewer_has_interest      bool
+	viewer_is_creator        interests.created_by_user_id is the viewer
 
 get_people(interest_id, viewer, page, cumulative=False) returns:
 
@@ -61,6 +62,7 @@ def get_interest(interest_id, viewer):
 		select(func.count()).select_from(UserInterest).where(UserInterest.interest_id == interest_id)
 	)
 	data["viewer_has_interest"] = db.session.get(UserInterest, (viewer.user_id, interest_id)) is not None
+	data["viewer_is_creator"] = interest.created_by_user_id == viewer.user_id
 	return data
 
 
