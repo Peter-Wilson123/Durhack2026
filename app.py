@@ -80,7 +80,7 @@ def logout():
 
 
 @app.route("/view/<username>")
-def veiw(username):
+def view(username):
 	user = auth.load_user(username=username,
                        email=username)
 	return flask.render_template("view.html", other_user=user)
@@ -146,15 +146,18 @@ def search_getpost():
 with app.app_context():
 	db.create_all()
 
+
 @app.get("/find-new-interest")
 @flask_login.login_required
 def discover_new_interest():
     recommended = find_new_interest.find_new_interest(flask_login.current_user)
     if recommended:
         return flask.redirect(
-            flask.url_for("interests.view_interest", interest_id=recommended.interest_id)
+            flask.url_for("interests.view_interest",
+                          interest_id=recommended.interest_id)
         )
     return flask.redirect(flask.url_for("account"))
+
 
 @app.route("/")
 def home():
