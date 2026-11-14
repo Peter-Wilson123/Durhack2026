@@ -8,7 +8,13 @@
 		<div class="card-body">
 			<h1 class="h3 mb-4">Sign in</h1>
 
-			<form method="post">
+			{# Shown by the script below when the backend sends us back here after a sign-in attempt #}
+			<div class="alert alert-danger small" id="signin-failed" role="alert" hidden>
+				We couldn't sign you in. This site is for Durham students only. Please use your student
+				@durham.ac.uk address, and check your password.
+			</div>
+
+			<form method="post" id="signin-form">
 				<p class="text-muted small mb-3" id="signin-help">
 					This site is for Durham students only. Please use your student @durham.ac.uk address.
 				</p>
@@ -31,4 +37,25 @@
 		</div>
 	</div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+	// SignInMessage: the backend doesn't say why a sign-in failed; it just sends you back to
+	// this page. So we note when the form was sent, and if we land here again a few seconds
+	// later, the attempt failed. The message never says whether an address has an account.
+	// Nothing about the address is stored: only the time.
+	(function () {
+		const KEY = "signin-attempt";
+		let sentAt = 0;
+		try { sentAt = Number(sessionStorage.getItem(KEY)); sessionStorage.removeItem(KEY); } catch {}
+		if (sentAt && Date.now() - sentAt < 8000) {
+			document.getElementById("signin-failed").hidden = false;
+			document.getElementById("identifier").focus();
+		}
+		document.getElementById("signin-form").addEventListener("submit", () => {
+			try { sessionStorage.setItem(KEY, String(Date.now())); } catch {}
+		});
+	})();
+</script>
 {% endblock %}
