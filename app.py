@@ -40,6 +40,8 @@ def account():
 	return flask.render_template("account.html")
 
 
+# LOGIN #
+
 @app.get("/login")
 def login_get():
     return flask.render_template("login.html")
@@ -47,16 +49,17 @@ def login_get():
 
 @app.post("/login")
 def login_post():
-    login_input = flask.request.form.get("identifier", "").strip()
-    password = flask.request.form.get("password", "")
+	identifier = flask.request.form["email"]
+	password = flask.request.form["password"]
 
-    # Matches either username (CIS code) or email in the database
-    user = auth.load_user(username=login_input, email=login_input, password=password)
-    if not user:
-        return flask.redirect(flask.url_for("login_get"))
+	if identifier is None or not auth.varify_user(identifier, password):
+		return flask.redirect(flask.url_for("login_get"))
 
-    flask_login.login_user(user)
-    return flask.redirect(flask.url_for("protected"))
+	flask_login.login_user(auth.get_user(identifier))
+	return flask.redirect(flask.url_for("protected"))
+
+# LOGOUT
+
 
 @app.route("/logout")
 def logout():

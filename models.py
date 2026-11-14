@@ -12,7 +12,9 @@ def utc_now():
 
 
 
-#User class will be used to interact with the database and the website
+# User class will be used to interact with the database and the website
+
+
 class User(UserMixin, db.Model):
 	__tablename__ = "users"
 
