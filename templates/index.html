@@ -9,22 +9,31 @@
 {% block content %}
 {# Placeholder data until interests come from the database #}
 {% set categories = [
-	{"key": "physical", "name": "Physical", "interests": ["Going on a walk", "Climbing", "Running", "Rowing", "Football", "Swimming", "Yoga"]},
-	{"key": "academic", "name": "Academic", "interests": ["Gravity studies", "Philosophy", "Astronomy", "Creative writing", "Languages"]},
-	{"key": "electronic", "name": "Electronic", "interests": ["Gaming", "Robotics", "Music production", "Coding", "3D printing"]},
+{"key": "physical", "name": "Physical", "interests": ["Going on a walk", "Climbing", "Running", "Rowing", "Football",
+"Swimming", "Yoga"]},
+{"key": "academic", "name": "Academic", "interests": ["Gravity studies", "Philosophy", "Astronomy", "Creative writing",
+"Languages"]},
+{"key": "electronic", "name": "Electronic", "interests": ["Gaming", "Robotics", "Music production", "Coding", "3D
+printing"]},
 ] %}
 {% set all_interests = categories | map(attribute="interests") | sum(start=[]) %}
 {% set half = (all_interests | length / 2) | round(0, "ceil") | int %}
 
 {#
-	One page, three states (set on .home by home.js):
-	  initial – heading, search, chips and cards
-	  search  – search pinned to the top, categories shown, live dropdown
-	  create  – query found nothing, so offer to create it
-	Without JavaScript every panel is shown.
+One page, three states (set on .home by home.js):
+initial - heading, search, chips and cards
+search - search pinned to the top, categories shown, live dropdown
+create - query found nothing, so offer to create it
+Without JavaScript every panel is shown.
 #}
 <noscript>
-	<style>.home .panel { grid-template-rows: 1fr !important; opacity: 1 !important; visibility: visible !important; }</style>
+	<style>
+		.home .panel {
+			grid-template-rows: 1fr !important;
+			opacity: 1 !important;
+			visibility: visible !important;
+		}
+	</style>
 </noscript>
 <div class="home" id="home" data-state="initial">
 
@@ -43,8 +52,8 @@
 				<path d="m20 20-3.5-3.5" />
 			</svg>
 			<input class="form-control form-control-lg" id="search-input" type="text"
-				placeholder="Try ‘climbing’ or ‘astronomy’"
-				role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-results">
+				placeholder="Try 'climbing' or 'astronomy'" role="combobox" aria-autocomplete="list"
+				aria-expanded="false" aria-controls="search-results">
 			<button class="search-close" id="search-close" type="button" aria-label="Close search">
 				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
 					stroke-linecap="round" aria-hidden="true">
@@ -65,7 +74,8 @@
 					<div class="marquee-track">
 						{% for pass in [1, 2] %}
 						{% for name in row %}
-						<button type="button" class="chip" data-interest="{{ name }}" {% if pass == 2 %}aria-hidden="true" tabindex="-1"{% endif %}>{{ name }}</button>
+						<button type="button" class="chip" data-interest="{{ name }}" {% if pass==2 %}aria-hidden="true"
+							tabindex="-1" {% endif %}>{{ name }}</button>
 						{% endfor %}
 						{% endfor %}
 					</div>
