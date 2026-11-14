@@ -11,11 +11,22 @@ Account Page
 <div class="account-card">
   <h2>Account Information</h2>
   <p><span id="profile-picture"></span></p>
-  <p><strong>Username:</strong> <span id="display-username"></span></p>
-  <p><strong>Email:</strong> <span id="display-email"></span></p>
-  <p><strong>Interests:</strong> <span id="interest-list"></span></p>
-  <p><strong>Interest Categories:</strong> <span id="interest-categories"></span></p>
-  <p><strong>Bio:</strong> <span id="display-bio"></span></p>
+  <p><strong>Username:</strong> <span id="display-username">{{ current_user.username }}</span></p>
+  <p><strong>Email:</strong> <span id="display-email">{{ current_user.email }}</span></p>
+  <p><strong>Interests:</strong> <span id="interest-list">
+
+      {% for i in current_user.user_interests %}
+      <a> {{i.interest.interest_name}}, </a>
+      {% endfor %}
+    </span>
+  </p>
+  <p><strong>Interest Categories:</strong> <span id="interest-categories">
+
+      {% for i in current_user.user_interests %}
+      <a> {{i.interest.category.category_name}}, </a>
+      {% endfor %}
+    </span></p>
+  <p><strong>Bio:</strong> <span id="display-bio">{{ current_user.bio }}</span></p>
 </div>
 
 <div class="account-change">

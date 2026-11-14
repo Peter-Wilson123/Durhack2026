@@ -10,8 +10,6 @@ def utc_now():
 	return datetime.now(timezone.utc)
 
 
-
-
 # User class will be used to interact with the database and the website
 
 
@@ -25,7 +23,7 @@ class User(UserMixin, db.Model):
 	password_hash = db.Column(db.String(256), nullable=False)
 	bio = db.Column(db.Text, default="")
 	avatar_url = db.Column(db.String(255), default="")
-	
+
 	created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
 
 	# Relationships
