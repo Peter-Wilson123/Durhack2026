@@ -1,7 +1,7 @@
 import flask
 import flask_login
 import auth
-
+import search
 from models import (
 	Category,
 	ChatRoom,
@@ -27,11 +27,11 @@ login_manager.init_app(app)
 
 @login_manager.user_loader
 def user_loader(user_id):
-    return db.session.get(User, user_id)
+	return db.session.get(User, user_id)
 
 
 with app.app_context():
-    db.create_all()
+	db.create_all()
 
 
 @app.get("/account")
@@ -44,28 +44,28 @@ def account():
 
 @app.get("/login")
 def login_get():
-    return flask.render_template("login.html")
+	return flask.render_template("login.html")
 
 
 @app.post("/login")
 def login_post():
-    login_input = flask.request.form.get("identifier", "").strip()
-    password = flask.request.form.get("password", "")
+	login_input = flask.request.form.get("identifier", "").strip()
+	password = flask.request.form.get("password", "")
 
-    # Matches either username (CIS code) or email in the database
-    user = auth.load_user(username=login_input,
-                          email=login_input, password=password)
-    if not user:
-        return flask.redirect(flask.url_for("login_get"))
+	# Matches either username (CIS code) or email in the database
+	user = auth.load_user(username=login_input,
+                       email=login_input, password=password)
+	if not user:
+		return flask.redirect(flask.url_for("login_get"))
 
-    flask_login.login_user(user)
-    return flask.redirect(flask.url_for("account"))
+	flask_login.login_user(user)
+	return flask.redirect(flask.url_for("account"))
 
 
 @app.route("/logout")
 def logout():
-    flask_login.logout_user()
-    return flask.redirect(flask.url_for("login_get"))
+	flask_login.logout_user()
+	return flask.redirect(flask.url_for("login_get"))
 
 
 @app.route("/register_success")
@@ -102,6 +102,30 @@ def register_post():
 
 	)
 	return flask.redirect(flask.url_for("register_success"))
+
+
+@app.route("/search", methods=["GET", "POST"])
+def search_getpost():
+
+	results = []
+	search_term = ""
+
+	if flask.request.method == "POST":
+
+		search_term = flask.request.form.get("search", "").strip()
+
+	exclude_id = (
+            flask_login.current_user.user_id
+            if flask_login.current_user.is_authenticated
+            else None
+        )
+	users = search.find_users_by_interest(search_term, exclude_user_id=exclude_id)
+	print(users)
+	return flask.render_template(
+		"search.html",
+		results=users,
+		search_term=search_term
+	)
 
 
 with app.app_context():
