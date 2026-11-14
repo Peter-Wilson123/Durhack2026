@@ -371,7 +371,7 @@ Tested with Flask's test client and the in-app browser against a seeded copy of 
 | Staff-style address (e.g. `j.smith@durham.ac.uk`) | **BROKEN (backend)** | Nothing tells students from staff. A staff-style address registered and signed in. |
 | Empty fields | **WORKS** | The browser blocks empty fields. The server also rejects them and returns to `/login`. |
 | Protected page while signed out | **WORKS (fixed)** | `/u/*` and `/interests/*` redirect to `/login`. Backend routes with `login_required` showed a page whose link opened a new tab; it now redirects to `/login`. Routes without `login_required` (`/`, `/search`, `/view/*`, `/api/*`, `POST /interests/new`) stay public. |
-| CIS code handling | **PARTLY** | Our sign-in asks for the email, not the CIS code. The backend still shows usernames on `/account`, `/view` and `/search`, and the register form still asks for "Username". |
+| CIS code handling | **PARTLY** | Since `4654f08` (Craig), sign-in asks for "Email or username" again, so the CIS code can be typed in. The backend still shows usernames on `/account` and `/view`, and the register form still asks for "Username". |
 
 **Frontend fixes made:**
 - the sign-in page shows the Durham-only message after a failed attempt;
@@ -437,7 +437,9 @@ The message never reveals whether an address has an account.
 - **Contacts:** withheld on the server for non-connections. There are no contact fields at all; for strangers `profile_api` sets `contacts` to `None`.
 - **Public cards and profiles:** responses for `/u/<id>` (other students), `/interests/<id>` and the partials contain no email or username. This was checked by fetching the HTML the pages receive.
 - **The owner's own page** contains only their own data.
-- **Still leaking (backend):** `/search` (emails), `/view/<username>` (email and CIS code), `/account` (own email and username).
+- **Still leaking (backend):** `/view/<username>` (email and CIS code) and `/account` (own email and username).
+- **Fixed:** `/search` was removed on `main` (`182f6bb`, Craig), so problem 6 (emails on `/search`) is gone.
+- **⚠️ Broken:** `app.py` still has `import search`, but `search.py` was deleted, so the app doesn't start until that line is removed.
 
 ## Home page: categories before typing (manual test)
 
