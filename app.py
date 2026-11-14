@@ -78,6 +78,13 @@ def logout():
 	return flask.redirect(flask.url_for("login_get"))
 
 
+@app.route("/view/<username>")
+def veiw(username):
+	user = auth.load_user(username=username,
+                       email=username)
+	return flask.render_template("view.html", other_user=user)
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
 	if flask.request.method == "POST":

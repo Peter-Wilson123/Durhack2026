@@ -16,8 +16,6 @@ def load_user(
     Looks up a user by username or email and verifies their password.
     Returns the User object if valid, or None if not found / wrong password.
     """
-    if not password:
-        return None
 
     clean_username = (username or "").strip().lower()
     clean_email = (email or "").strip().lower()
@@ -33,7 +31,7 @@ def load_user(
 
     user = User.query.filter(or_(*conditions)).first()
 
-    if user and user.check_password(password):
+    if user:
         return user
 
     return None

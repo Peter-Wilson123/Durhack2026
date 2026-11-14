@@ -27,14 +27,21 @@
             <span class="brand-mark" aria-hidden="true"></span>
             Durham
         </a>
-
-        <a class="icon-btn" href="/account" aria-label="Your account">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                aria-hidden="true">
+        <a class="auth-link d-inline-flex align-items-center gap-1 text-muted text-decoration-none small"
+            href="{{ url_for('logout') if current_user.is_authenticated else url_for('login_get') }}"
+            aria-label="{{ 'Logout' if current_user.is_authenticated else 'Login' }}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                {% if current_user.is_authenticated %}
                 <circle cx="12" cy="12" r="10" />
                 <circle cx="12" cy="10" r="3.2" />
-                <path d="M6.2 18.4c1.3-2.2 3.3-3.4 5.8-3.4s4.5 1.2 5.8 3.4" stroke-linecap="round" />
+                <path d="M6.2 18.4c1.3-2.2 3.3-3.4 5.8-3.4s4.5 1.2 5.8 3.4" />
+                {% else %}
+                <path d="M13 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5" />
+                <path d="m10 17 5-5-5-5M15 12H3" />
+                {% endif %}
             </svg>
+            <span>{{ 'Log out' if current_user.is_authenticated else 'Log in' }}</span>
         </a>
     </header>
 
@@ -47,14 +54,13 @@
             <ul class="site-menu-links">
                 <li><a href="/">Home</a></li>
                 <li><a href="/account">Account Info</a></li>
+                {% if current_user.is_authenticated %}
                 <li><a href="/register">Create Account</a></li>
+                {% endif %}
                 <li><a href="/search">Search Users</a></li>
                 <li><a href="/view">View User Profile</a></li>
-                {% if current_user.is_authenticated %}
-                <li><a href="/logout">Logout</a></li>
-                {% else %}
-                <li><a href="/login">Login</a></li>
-                {% endif %}
+
+
             </ul>
         </div>
     </nav>
