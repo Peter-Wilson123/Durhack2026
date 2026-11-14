@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}
+User Search
+{% endblock %}
+
+{% block content %}
+
+<h1>Search for users with similar interests</h1>
+
+<form action="{{ url_for('search_users') }}" method="GET">
+    <input
+        type="text"
+        name="q"
+        placeholder="Search for users..."
+        required
+    >
+
+    <button type="submit">Search</button>
+</form>
+
+
+{% endblock %}

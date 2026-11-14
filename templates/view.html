@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}
+View Other User's Account Information
+{% endblock %}
+
+{% block content %}
+
+<h1><span id="other-user"></span>Account Information</h1>
+
+<div class="user-account-card">
+  <h2>Account Information</h2>
+  <p><span id= "profile-picture"></span></p>
+  <p><strong>Username:</strong> <span id= "their-display-username"></span></p>
+  <p><strong>Email:</strong> <span id="their-display-email"></span></p>
+  <p><strong>Interests:</strong> <span id="their-interest-list"></span></p>
+  <p><strong>Interest Categories:</strong> <span id="their-interest-categories"></span></p>
+  <p><strong>Bio:</strong> <span id="their-display-bio"></span></p>
+</div>
+
+
+{% endblock %}
+
