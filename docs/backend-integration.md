@@ -217,3 +217,102 @@ python app.py                  # http://127.0.0.1:5000
     - **other, and has waved at you:** `/u/4` (priya)
     - **other:** `/u/5` (sam)
   - Until problem 1 is fixed, any password works.
+
+---
+
+# Interests ↔ users (added 14 Nov 2026, `main` at `c376fad`)
+
+The backend is still Flask + SQLite. There is still no FastAPI, Postgres, pgvector or
+OpenAPI, and nothing has been added for interests and users since the first part of
+this doc.
+
+## ⚠️ Privacy problem 6: `/search` gives out emails
+
+`GET/POST /search` (`app.py`, `search.find_users_by_interest`, `templates/search.html`)
+lists every user who has a matching interest. For each one, it renders:
+- `person.email`;
+- `person.id`, `person.name` and `person.phone` (not real `User` fields, so they're blank).
+
+It needs no sign-in. Searching "mycology" while signed out showed all three seeded users'
+email addresses. It also `print`s the user list to the server log on every search.
+
+## a) Does a user ↔ interest relationship exist?
+
+**Yes:** the `user_interests` table (`models.UserInterest`):
+
+| Column | Type | Notes |
+|---|---|---|
+| `user_id` | FK → `users.user_id` | part of the primary key |
+| `interest_id` | FK → `interests.interest_id` | part of the primary key |
+| `experience_level` | string, default `"Curious"` | |
+| `personal_note` | string | |
+| `added_at` | datetime | |
+
+It's exposed only through HTML pages, never JSON:
+
+| Where | What it shows |
+|---|---|
+| `/account` | the signed-in user's own interests |
+| `/view/<username>` | another user's interests, plus their email (problem 2) |
+| `/search` | users whose interest name contains the text, with emails (problem 6) |
+| `/u/<user_id>` (our profile page) | a user's interests, read directly from the table by `profile_api.py` |
+
+## b) Endpoints for an interest's details, an interest's users, or a user's interests
+
+| Method | Path | Gives | Auth |
+|---|---|---|---|
+| GET | `/interests/<interest_id>` | HTML interest page: name, categories (through tags), description, tags, and related interests (`discovery.related_interests`, ranked by shared tags) | none |
+| GET | `/api/interests?q=`, `/api/discover?q=` | `{id, name, url, tags[]}` per interest; no users, no counts | none |
+| POST | `/search` | users with an interest whose **name contains** the text (not by ID), as HTML with emails | none |
+
+There is **no endpoint** that returns an interest's users or user count, and no way to add
+or remove an interest for the signed-in user (`account.html` posts to `/update-account`,
+which doesn't exist). There are no wave endpoints, and no discoverability or opt-out
+setting.
+
+## c) Field mapping for the interest page
+
+| Frontend needs | Comes from | Status |
+|---|---|---|
+| `slug` | – (interests are addressed by `interest_id`) | **MISSING**: page stays at `/interests/<id>` |
+| `name` | `interests.interest_name` | ✓ |
+| `category` | `Interest.category`: most common category across its tags, or none if untagged | ✓ (derived) |
+| `description` | `interests.description` | ✓ |
+| `tags[]` | `interests` → `interest_tags` → `tags.tag_name` | ✓ |
+| `related_interests[]` | `discovery.related_interests(interest)` | ✓ |
+| `interested_count` | count of `user_interests` rows for the interest | Derivable, no endpoint |
+| `viewer_has_interest` | a `user_interests` row for (viewer, interest) | Derivable, no endpoint |
+| users `[]`, paginated | `user_interests` → `users`, newest first | Derivable, **no endpoint, no cursor** |
+| user `handle` | – (`username` is the CIS code) | **MISSING**: cards link to `/u/<user_id>` |
+| user `display_name` | `users.display_name` (else "Durham student") | ✓ |
+| user `avatar_colour` | – | **MISSING**: same palette fallback as the profile page |
+| user `year` | – | **MISSING**: never shown |
+| user `wave_state` | `connections`: `accepted` → connected; `pending` → sent or received, depending on direction | Derivable |
+| add / remove interest | – | **MISSING** |
+| discoverability opt-out | – | **MISSING** |
+
+### What the interest page does with each gap (temporary, marked `TODO(backend)`)
+
+| Gap | What happens |
+|---|---|
+| The user list and count have no endpoint | `interest_api.py` reads `user_interests` directly and selects **only** `user_id` and `display_name` for cards. It never loads emails, usernames or bios into a card. |
+| No pagination endpoint | "Load more" asks the same page for the next 12 (`?page=N&partial=people`), counted on the server. |
+| The backend doesn't exclude the viewer | `interest_api.py` excludes the signed-in user on the server, not in the browser. |
+| No add/remove endpoint | The "+" button shows the real state (added or not) but is disabled, with a "coming soon" message. |
+| No wave endpoints | Card Wave buttons reuse the profile page's `sendWave`/`acceptWave` stubs in `static/profile.js`. They send nothing and say so. |
+| No discoverability setting | Everyone with the interest is listed and counted. |
+
+## Gaps for Craig and Peter (interest ↔ users)
+
+1. **Fix `/search` (problem 6).** Stop rendering emails, require sign-in, and remove the
+   `print` calls.
+2. **Interest users endpoint.** Return only public fields (handle, display name, avatar
+   colour, year if shown, wave state), paginated with a cursor, excluding the viewer and
+   anyone who opted out. Include the total count.
+3. **Add/remove interest endpoints** for the signed-in user (fixing the broken
+   `/update-account` would also do).
+4. **Discoverability setting:** a `users` column, respected by search, interest user lists
+   and counts.
+5. **Interest slugs:** a unique slug column, if the URLs should be `/interest/<slug>`.
+6. The earlier gaps still apply: handle, year, avatar colour, wave endpoints, and the
+   password check.
