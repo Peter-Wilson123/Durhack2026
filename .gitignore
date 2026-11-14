@@ -218,5 +218,5 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-Durhack2026.code-workspace
-.vscode/settings.json
+*.code-workspace
+.vscode/
