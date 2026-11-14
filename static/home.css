@@ -367,17 +367,21 @@
     position: relative;
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 1rem;
+    transition: opacity .2s;
+}
+
+/* Loading: keep the current boxes, just dimmed, so the grid never collapses */
+.groups[aria-busy="true"] {
+    opacity: .55;
 }
 
 .group {
     --g: var(--g0);
-    /* Size to content: --n (number of interests, set by home.js) sets the
-       starting width, so small groups share a row and large ones take it */
-    flex: 1 1 clamp(220px, calc(var(--n, 3) * 105px), 100%);
-    min-width: min(220px, 100%);
-    max-width: 100%;
+    /* Rectangular boxes: start at 16rem and grow to fill each row */
+    flex: 1 1 16rem;
+    min-width: 0;
     padding: 1rem 1.25rem 1.1rem;
     border: 2px solid var(--g);
     border-radius: 1rem;
@@ -423,6 +427,25 @@
     color: var(--ink);
     text-decoration: none;
     transition: border-color .15s, color .15s, background-color .15s;
+}
+
+/* At most 8 pills until "+N more" is pressed (PILLS_PER_GROUP in home.js) */
+.group:not(.expanded) .group-items li:nth-child(n + 9) {
+    display: none;
+}
+
+.group-more {
+    margin-top: .6rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--g);
+    font-size: .875rem;
+    font-weight: 600;
+}
+
+.group-more:hover {
+    text-decoration: underline;
 }
 
 .group-chip:hover,
@@ -689,4 +712,16 @@
     }
 
     /* bigger touch targets */
+}
+/* One column of boxes on small phones */
+@media (max-width: 639.98px) {
+    .group {
+        flex-basis: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .groups {
+        transition: none;
+    }
 }
