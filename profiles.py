@@ -51,15 +51,6 @@ def _load(user_id, preview_as=None):
 	try:
 		return profile_api.get_profile(user_id, flask_login.current_user, preview_as), None
 	except profile_api.ProfileNotFound:
-		return None, flask.make_response(
-			flask.render_template("profile/error.html",
-			                      handle=handle, kind="missing"), 404
-		)
-	except profile_api.ProfileUnavailable:
-		return None, flask.make_response(
-			flask.render_template("profile/error.html",
-			                      handle=handle, kind="unavailable"), 503
-		)
 		return None, _error("missing", 404)
 	except SQLAlchemyError:
 		flask.current_app.logger.exception("Profile lookup failed")
