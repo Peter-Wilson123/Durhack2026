@@ -637,57 +637,6 @@
     font-weight: 600;
 }
 
-/* ---------- Interest page ---------- */
-.interest-page {
-    --ease: cubic-bezier(.2, .7, .2, 1);
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 2.5rem 1rem 4rem;
-}
-
-.back-link {
-    display: inline-block;
-    margin-bottom: 1.5rem;
-    color: var(--accent);
-    text-decoration: none;
-}
-
-.interest-page h1 {
-    font-weight: 700;
-    letter-spacing: -.02em;
-}
-
-.interest-page p {
-    color: var(--muted);
-}
-
-.interest-page .tag-list a {
-    color: inherit;
-    text-decoration: none;
-}
-
-.interest-related {
-    margin-top: 2.5rem;
-}
-
-.interest-related h2 {
-    font-size: 1.25rem;
-    font-weight: 700;
-}
-
-.chip-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: .5rem;
-    padding: 0;
-    list-style: none;
-}
-
-.chip-list .chip {
-    display: inline-block;
-    text-decoration: none;
-}
-
 /* ---------- Small screens ---------- */
 @media (max-width: 640px) {
     .home {

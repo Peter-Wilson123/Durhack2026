@@ -1,44 +1,96 @@
+{# InterestPage: an interest, related interests, and the students who have it.
+   Data: interest_api.py. The "+" button and Wave buttons wait on backend endpoints. #}
 {% extends "base.html" %}
 
-{% block title %}{{ interest.interest_name }} · Superposition{% endblock %}
+{% block title %}{{ i.name }} · Superposition{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='interest.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="interest-page">
+{% set cat_name, cat_bg, cat_fg = category_style(i.category_slug) %}
+<div class="interest-page" style="--cat-bg: {{ cat_bg }}; --cat-fg: {{ cat_fg }}">
 	<a class="back-link" href="/">← Find more interests</a>
 
-	<h1>{{ interest.interest_name }}</h1>
+	<header class="interest-header">
+		<div class="interest-title-row">
+			<h1 class="interest-name">{{ i.name }}</h1>
 
-	{% if interest.categories %}
-	<p class="interest-cats">{{ interest.categories | map(attribute="category_name") | join(" · ") }}</p>
-	{% endif %}
+			{# InterestToggle: add/remove this interest. TODO(backend): no endpoint yet, so it only explains that #}
+			<button type="button" class="interest-toggle" id="interest-toggle"
+				aria-pressed="{{ 'true' if i.viewer_has_interest else 'false' }}" aria-disabled="true"
+				aria-label="{{ 'In your interests' if i.viewer_has_interest else 'Add to my interests' }}"
+				aria-describedby="interest-toggle-status">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					{% if i.viewer_has_interest %}<path d="m5 12.5 4.5 4.5L19 7.5" />{% else %}<path d="M12 5v14M5 12h14" />{% endif %}
+				</svg>
+			</button>
+			<span class="interest-toggle-label" aria-hidden="true">{{ "Added" if i.viewer_has_interest else "Add to my interests" }}</span>
+		</div>
 
-	{% if interest.description %}
-	<p class="interest-desc">{{ interest.description }}</p>
-	{% endif %}
+		<p class="interest-category">
+			{% if i.category %}<span class="category-label">{{ i.category }}</span>{% else %}<span class="category-label">Uncategorised</span>{% endif %}
+		</p>
+		<p class="interest-toggle-status" id="interest-toggle-status" role="status"></p>
 
-	{% if interest.tags %}
-	<ul class="tag-list" aria-label="Tags">
-		{% for tag in interest.tags %}
-		<li><a href="/?q={{ tag.tag_name | urlencode }}">#{{ tag.tag_name }}</a></li>
-		{% endfor %}
-	</ul>
-	{% else %}
-	<p class="interest-untagged">No tags yet. Tags help people find this through related interests.</p>
-	{% endif %}
+		{% if i.description %}<p class="interest-description">{{ i.description }}</p>{% endif %}
 
-	{% if related %}
+		{% if i.tags %}
+		<ul class="interest-tags" aria-label="Tags">
+			{% for tag in i.tags %}
+			<li><a href="/?q={{ tag | urlencode }}">#{{ tag }}</a></li>
+			{% endfor %}
+		</ul>
+		{% endif %}
+	</header>
+
+	{% if i.related %}
 	<section class="interest-related" aria-labelledby="related-title">
-		<h2 id="related-title">You might also like</h2>
-		<ul class="chip-list">
-			{% for other in related %}
-			<li><a class="chip" href="/interests/{{ other.interest_id }}">{{ other.interest_name }}</a></li>
+		<h2 id="related-title">You might like</h2>
+		<ul class="interest-pills">
+			{% for r in i.related %}
+			{% set name, bg, fg = category_style(r.category_slug) %}
+			<li>
+				<a class="interest-pill" href="{{ r.url }}" style="--pill-bg: {{ bg }}; --pill-fg: {{ fg }}">
+					{{ r.name }}<span class="pill-cat"><span class="visually-hidden">, category: </span>{{ name }}</span>
+				</a>
+			</li>
 			{% endfor %}
 		</ul>
 	</section>
 	{% endif %}
+
+	<section class="interest-people" aria-labelledby="people-title">
+		<h2 id="people-title">
+			{{ i.interested_count }} interested{% if i.viewer_has_interest %} <span class="people-you">(including you)</span>{% endif %}
+		</h2>
+
+		{% set others = i.interested_count - (1 if i.viewer_has_interest else 0) %}
+		{% if others == 0 %}
+		<p class="people-empty">
+			{% if i.viewer_has_interest %}Only you so far. Others who add it will show up here.
+			{% else %}Nobody has added this interest yet. Be the first.{% endif %}
+		</p>
+		{% else %}
+		<div class="people-grid" id="people-grid">
+			{% include "interest/_people.html" %}
+		</div>
+		{% if people.has_more %}
+		<p class="people-more">
+			<a class="btn btn-outline-primary" id="people-more"
+				href="{{ url_for('interests.view_interest', interest_id=i.id, page=people.next_page) }}"
+				data-next="{{ people.next_page }}">Load more</a>
+		</p>
+		{% endif %}
+		<p class="visually-hidden" id="people-status" role="status" aria-live="polite"></p>
+		{% endif %}
+	</section>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='profile.js') }}"></script>
+<script src="{{ url_for('static', filename='interest.js') }}"></script>
 {% endblock %}
