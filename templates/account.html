@@ -10,8 +10,8 @@ Account Page
 
 <div class="account-card">
   <h2>Account Information</h2>
-  <p><span id= "profile-picture"></span></p>
-  <p><strong>Username:</strong> <span id= "display-username"></span></p>
+  <p><span id="profile-picture"></span></p>
+  <p><strong>Username:</strong> <span id="display-username"></span></p>
   <p><strong>Email:</strong> <span id="display-email"></span></p>
   <p><strong>Interests:</strong> <span id="interest-list"></span></p>
   <p><strong>Interest Categories:</strong> <span id="interest-categories"></span></p>
@@ -20,29 +20,28 @@ Account Page
 
 <div class="account-change">
   <h2>Add or change account information:</h2>
-    <form action="/update-account" method="POST">
-        <div>
-        <label for="new-username">New Username:</label>
-        <input type="text" id="new-username" name="new-username">
-        </div>
-    
-        <div>
-        <label for="new-bio">New Bio:</label>
-        <textarea id="new-bio" name="new-bio"></textarea>
-        </div>
+  <form action="/update-account" method="POST">
+    <div>
+      <label for="new-username">New Username:</label>
+      <input type="text" id="new-username" name="new-username">
+    </div>
 
-        <div>
-        <label for="new-interests">New Interests:</label>
-        <input type="text" id="new-interests" name="new-interests">
-        </div>
+    <div>
+      <label for="new-bio">New Bio:</label>
+      <textarea id="new-bio" name="new-bio"></textarea>
+    </div>
 
-        <div>
-        <label for="remove-interests">Remove Interests:</label>
-        <input type="text" id="remove-interests" name="remove-interests">
-        </div>
-    
-        <button type="submit">Update Account</button>
-    </form>
+    <div>
+      <label for="new-interests">New Interests:</label>
+      <input type="text" id="new-interests" name="new-interests">
+    </div>
+
+    <div>
+      <label for="remove-interests">Remove Interests:</label>
+      <input type="text" id="remove-interests" name="remove-interests">
+    </div>
+
+    <button type="submit">Update Account</button>
+  </form>
 </div>
 {% endblock %}
-
