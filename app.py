@@ -1,5 +1,6 @@
 import flask
 import flask_login
+import auth
 
 app = flask.Flask(__name__)
 app.secret_key = "super secret string"  # Change this!
@@ -8,18 +9,9 @@ login_manager = flask_login.LoginManager()
 login_manager.init_app(app)
 
 
-class User(flask_login.UserMixin):
-	def __init__(self, email, password):
-		self.id = email
-		self.password = password
-
-
-users = {"leafstorm": User("leafstorm", "secret")}
-
-
 @login_manager.user_loader
 def user_loader(id):
-	return users.get(id)
+	return auth.get_user(id)
 
 
 @app.get("/login")
@@ -33,12 +25,13 @@ def login_get():
 
 @app.post("/login")
 def login_post():
-	user = users.get(flask.request.form["email"])
+	username = flask.request.form["email"]
+	password = flask.request.form["password"]
 
-	if user is None or user.password != flask.request.form["password"]:
-		return flask.redirect(flask.url_for("login"))
+	if username is None or not auth.varify_user(username, password):
+		return flask.redirect(flask.url_for("login_get"))
 
-	flask_login.login_user(user)
+	flask_login.login_user(auth.get_user(username))
 	return flask.redirect(flask.url_for("protected"))
 
 
@@ -46,9 +39,9 @@ def login_post():
 @flask_login.login_required
 def protected():
 	return flask.render_template_string(
-		"Logged in as: {{ user.id }}",
-		user=flask_login.current_user
-	)
+            "Logged in as: {{ user.id }}",
+          		user=flask_login.current_user
+        )
 
 
 @app.route("/logout")
