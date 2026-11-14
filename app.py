@@ -7,7 +7,6 @@ from models import (
 	ChatRoom,
 	Connection,
 	Interest,
-	Location,
 	RoomMessage,
 	User,
 	UserInterest,
@@ -27,17 +26,12 @@ login_manager.init_app(app)
 
 
 @login_manager.user_loader
-def load_user(user_id):
-	return db.session.get(User, user_id)
-
-
-@login_manager.unauthorized_handler
-def unauthorized():
-	return flask.jsonify({"error": "Authentication required"}), 401
+def user_loader(user_id):
+    return db.session.get(User, int(user_id))
 
 
 with app.app_context():
-	db.create_all()
+    db.create_all()
 
 
 @app.get("/account")
@@ -50,7 +44,7 @@ def account():
 
 @app.get("/login")
 def login_get():
-	return flask.render_template("login.html")
+    return flask.render_template("login.html")
 
 
 @app.post("/login")
@@ -69,8 +63,8 @@ def login_post():
 
 @app.route("/logout")
 def logout():
-	flask_login.logout_user()
-	return "Logged out"
+    flask_login.logout_user()
+    return flask.redirect(flask.url_for("login_get"))
 
 
 @app.route("/register_success")

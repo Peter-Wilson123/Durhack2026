@@ -10,18 +10,7 @@ def utc_now():
 	return datetime.now(timezone.utc)
 
 
-class Location(db.Model):
-	__tablename__ = "locations"
 
-	location_id = db.Column(db.Integer, primary_key=True)
-	city = db.Column(db.String(100), nullable=False)
-	country = db.Column(db.String(100), nullable=False)
-
-	__table_args__ = (
-		db.UniqueConstraint("city", "country", name="uq_city_country"),
-	)
-
-	users = db.relationship("User", back_populates="location")
 
 # User class will be used to interact with the database and the website
 
@@ -36,13 +25,10 @@ class User(UserMixin, db.Model):
 	password_hash = db.Column(db.String(256), nullable=False)
 	bio = db.Column(db.Text, default="")
 	avatar_url = db.Column(db.String(255), default="")
-	location_id = db.Column(
-		db.Integer, db.ForeignKey("locations.location_id"), nullable=True
-	)
+	
 	created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
 
 	# Relationships
-	location = db.relationship("Location", back_populates="users")
 	user_interests = db.relationship(
 		"UserInterest", back_populates="user", cascade="all, delete-orphan"
 	)
