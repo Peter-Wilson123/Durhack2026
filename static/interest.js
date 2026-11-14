@@ -2,16 +2,28 @@
 // Wave buttons on the cards are handled by static/profile.js, shared with the profile page.
 
 // ---------- "+" button ----------
-// TODO(backend): there is no endpoint to add or remove an interest yet, so the
-// button only explains that. Once there is one, POST here and then reload the
-// page so the count, the list and your profile all update together.
+// Adds or removes this interest from your profile through the backend's
+// POST /update-account (it redirects to /account when done), then reloads the
+// page so the count, the list and your profile all show the change.
 const toggle = document.getElementById("interest-toggle");
 if (toggle) {
-	toggle.addEventListener("click", () => {
+	toggle.addEventListener("click", async () => {
+		const status = document.getElementById("interest-toggle-status");
 		const added = toggle.getAttribute("aria-pressed") === "true";
-		document.getElementById("interest-toggle-status").textContent = added
-			? "Removing interests isn't available yet."
-			: "Adding interests isn't available yet.";
+		const field = added ? "remove-interests" : "new-interests";
+		toggle.disabled = true;
+		status.textContent = added ? "Removing…" : "Adding…";
+		try {
+			const response = await fetch("/update-account", {
+				method: "POST",
+				body: new URLSearchParams({ [field]: toggle.dataset.name }),
+			});
+			if (!response.ok || !response.url.endsWith("/account")) throw new Error(response.status);
+			location.reload();
+		} catch {
+			toggle.disabled = false;
+			status.textContent = "That didn't work. Please try again.";
+		}
 	});
 }
 

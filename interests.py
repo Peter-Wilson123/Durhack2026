@@ -9,7 +9,9 @@ import flask_login
 from sqlalchemy import func, inspect, select
 from sqlalchemy.exc import SQLAlchemyError
 
+import colours
 import discovery
+import home_api
 import interest_api
 import taxonomy
 from models import Category, Interest, Tag, db
@@ -17,6 +19,15 @@ from models import Category, Interest, Tag, db
 MAX_TAGS = 10
 
 bp = flask.Blueprint("interests", __name__)
+
+
+@bp.app_context_processor
+def home_page_helpers():
+	"""Lets index.html ask for its category cards and colours (see home_api.py, colours.py)."""
+	return {
+		"home_category_cards": home_api.category_cards,
+		"category_palette": colours.palette_for_js,
+	}
 
 
 # ---------- JSON APIs used by the home page ----------

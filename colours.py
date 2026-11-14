@@ -1,42 +1,60 @@
 """
-Colours and short display names for categories, and the avatar palette.
+Category groups, their colours and names, and the avatar palette.
 This is the ONE place to change them.
 
-CATEGORIES is keyed by a slug made from the backend's category_name (see
-category_slug). The backend has no slug column, so if a category is renamed
-there, rename its key here too. Unknown categories fall back to grey.
+The backend has 20 categories (taxonomy.py). The site shows them as 10
+broader GROUPS. CATEGORY_GROUP maps each backend category (by slug, made from
+category_name) to a group. If a category is added or renamed in the backend,
+add or rename it here too; anything unknown falls back to grey "Other".
 
-Every pair is dark text on a pale background with at least 4.5 : 1 contrast
-(WCAG AA). Several categories share a hue family, so the page always shows
-the category NAME next to the colour: never rely on colour alone.
+Each group has:
+  strong  header/border colour, with white text on it   (contrast >= 4.5 : 1)
+  bg, fg  pale pill background and dark text on it     (contrast >= 4.5 : 1)
+
+Sport and Recreation are both green, so pages always show the group NAME next
+to its colour: never rely on colour alone.
 """
 
 import re
 
-# slug: (short name, background, text)
-CATEGORIES = {
-	"science-and-the-natural-world": ("Science", "#DBEAFE", "#1E3A8A"),
-	"mathematics-and-logic": ("Maths", "#E0E7FF", "#312E81"),
-	"technology-and-computing": ("Tech", "#CFFAFE", "#164E63"),
-	"engineering-and-invention": ("Engineering", "#E2E8F0", "#1E293B"),
-	"arts-and-creative-expression": ("Arts", "#FEF3C7", "#78350F"),
-	"music-and-performing-arts": ("Music", "#FCE7F3", "#831843"),
-	"literature-and-language": ("Literature", "#F3E8FF", "#581C87"),
-	"history-and-civilisation": ("History", "#F5E6D3", "#5C3A12"),
-	"philosophy-and-intellectual-pursuits": ("Philosophy", "#EDE9FE", "#4C1D95"),
-	"religion-and-spirituality": ("Religion", "#FAE8FF", "#701A75"),
-	"geography-and-exploration": ("Geography", "#CCFBF1", "#134E4A"),
-	"politics-law-and-society": ("Politics", "#FFE4E6", "#881337"),
-	"business-and-economics": ("Business", "#E7E5E4", "#292524"),
-	"sport-and-physical-activities": ("Sport", "#DCFCE7", "#14532D"),
-	"nature-and-outdoor-recreation": ("Outdoors", "#ECFCCB", "#365314"),
-	"food-and-culinary-arts": ("Food", "#FFEDD5", "#7C2D12"),
-	"games-and-recreation": ("Games", "#FEE2E2", "#7F1D1D"),
-	"collecting-and-craftsmanship": ("Crafts", "#FEF9C3", "#713F12"),
-	"personal-development-and-lifestyle": ("Lifestyle", "#D1FAE5", "#064E3B"),
-	"transport-and-machinery": ("Transport", "#E0F2FE", "#0C4A6E"),
+# key: (name, strong, bg, fg) in the order the home page shows them
+GROUPS = {
+	"science": ("Science", "#0E7490", "#CFFAFE", "#164E63"),        # cyan
+	"mathematics": ("Mathematics", "#1E3A8A", "#DBEAFE", "#1E3A8A"),  # dark blue
+	"technology": ("Technology", "#6D28D9", "#EDE9FE", "#4C1D95"),   # purple
+	"arts": ("Arts", "#A16207", "#FEF9C3", "#713F12"),               # yellow
+	"music": ("Music", "#C2410C", "#FFEDD5", "#7C2D12"),             # orange
+	"humanities": ("Humanities", "#B91C1C", "#FEE2E2", "#7F1D1D"),   # red
+	"society": ("Society", "#4B5563", "#F3F4F6", "#1F2937"),         # grey
+	"practical": ("Practical", "#8A5A2B", "#F5E6D3", "#5C3A12"),     # tan
+	"sport": ("Sport", "#166534", "#DCFCE7", "#14532D"),             # dark green
+	"recreation": ("Recreation", "#4D7C0F", "#ECFCCB", "#365314"),   # bright green
 }
-CATEGORY_FALLBACK = ("Other", "#ECEAEE", "#3B3740")
+FALLBACK_GROUP = ("Other", "#57534E", "#ECEAEE", "#3B3740")
+
+# backend category slug -> group key
+CATEGORY_GROUP = {
+	"science-and-the-natural-world": "science",
+	"mathematics-and-logic": "mathematics",
+	"technology-and-computing": "technology",
+	"engineering-and-invention": "technology",
+	"arts-and-creative-expression": "arts",
+	"music-and-performing-arts": "music",
+	"literature-and-language": "humanities",
+	"history-and-civilisation": "humanities",
+	"philosophy-and-intellectual-pursuits": "humanities",
+	"religion-and-spirituality": "humanities",
+	"politics-law-and-society": "society",
+	"business-and-economics": "society",
+	"geography-and-exploration": "society",
+	"personal-development-and-lifestyle": "society",
+	"food-and-culinary-arts": "practical",
+	"collecting-and-craftsmanship": "practical",
+	"transport-and-machinery": "practical",
+	"sport-and-physical-activities": "sport",
+	"nature-and-outdoor-recreation": "recreation",
+	"games-and-recreation": "recreation",
+}
 
 
 def category_slug(category_name):
@@ -44,9 +62,29 @@ def category_slug(category_name):
 	return re.sub(r"[^a-z0-9]+", "-", (category_name or "").lower()).strip("-")
 
 
+def group_of(slug):
+	"""Group key for a backend category slug, or None if it isn't mapped."""
+	return CATEGORY_GROUP.get(slug or "")
+
+
+def group_style(group_key):
+	"""(name, strong, bg, fg) for a group key, or grey 'Other'."""
+	return GROUPS.get(group_key or "", FALLBACK_GROUP)
+
+
 def category_style(slug):
-	"""(short name, background, text) for a category slug, or grey 'Other'."""
-	return CATEGORIES.get(slug or "", CATEGORY_FALLBACK)
+	"""(name, bg, fg) for a backend category slug: the pill colours of its group."""
+	name, _strong, bg, fg = group_style(group_of(slug))
+	return name, bg, fg
+
+
+def palette_for_js():
+	"""{backend slug: {name, strong, bg, fg}} so home.js colours tag boxes from this file."""
+	out = {}
+	for slug, key in CATEGORY_GROUP.items():
+		name, strong, bg, fg = GROUPS[key]
+		out[slug] = {"name": name, "strong": strong, "bg": bg, "fg": fg}
+	return out
 
 
 # key: (label shown to people, colour). White icons have at least 4.5 : 1 on each.

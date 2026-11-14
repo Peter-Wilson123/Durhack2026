@@ -7,15 +7,12 @@
 {% endblock %}
 
 {% block content %}
-{% set chips = chips or [] %}
-{% set half = (chips | length / 2) | round(0, "ceil") | int %}
-
 {#
-One page, three states (set on .home by home.js):
-initial – heading, search, suggestions and quick links
-search – search pinned to the top, related-interest groupings, live dropdown
-create – nothing found, so offer to create it
-Groupings and suggestions come from /api/discover, /api/interests and /api/tags.
+	One page, three states (set on .home by home.js):
+	  initial – heading, search and the 10 category cards
+	  search  – search pinned to the top. Empty query: category cards. Typed query: tag boxes
+	  create  – nothing found, so offer to create it
+	Category cards come from home_api.py; tag boxes from /api/discover.
 #}
 <noscript>
 	<style>
@@ -26,7 +23,7 @@ Groupings and suggestions come from /api/discover, /api/interests and /api/tags.
 		}
 	</style>
 </noscript>
-<div class="home" id="home" data-state="initial">
+<div class="home" id="home" data-state="initial" data-signed-in="{{ 'true' if current_user.is_authenticated else 'false' }}">
 
 	<div class="panel" data-for="initial">
 		<div class="panel-inner">
@@ -45,7 +42,7 @@ Groupings and suggestions come from /api/discover, /api/interests and /api/tags.
 			<input class="form-control form-control-lg" id="search-input" type="text"
 				placeholder="Try 'climbing' or 'astronomy'" role="combobox" aria-autocomplete="list"
 				aria-expanded="false" aria-controls="search-results">
-			<button class="search-close" id="search-close" type="button" aria-label="Close search">
+			<button class="search-close" id="search-close" type="button" aria-label="Clear search">
 				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
 					stroke-linecap="round" aria-hidden="true">
 					<path d="M6 6l12 12M18 6 6 18" />
@@ -56,56 +53,59 @@ Groupings and suggestions come from /api/discover, /api/interests and /api/tags.
 		<p class="visually-hidden" id="search-status" aria-live="polite"></p>
 	</form>
 
-	<!-- Initial: suggestions and quick links -->
-	<div class="panel" data-for="initial">
-		<div class="panel-inner">
-			{% if chips %}
-			<div class="marquee" aria-label="Suggested interests">
-				{% for row in [chips[:half], chips[half:]] %}
-				<div class="marquee-row {{ 'reverse' if loop.index == 2 }}">
-					<div class="marquee-track">
-						{% for pass in [1, 2] %}
-						{% for name in row %}
-						<button type="button" class="chip" data-interest="{{ name }}" {% if pass==2 %}aria-hidden="true"
-							tabindex="-1" {% endif %}>{{ name }}</button>
-						{% endfor %}
-						{% endfor %}
-					</div>
-				</div>
-				{% endfor %}
-			</div>
-			{% endif %}
-
-			<div class="hero-actions">
-				<a class="action-card" href="#explore" data-go="search">
-					<strong>Browse</strong>
-					<span>Explore interests and how they connect</span>
-				</a>
-				<a class="action-card" href="./create_interest">
-					<strong>Add an interest</strong>
-					<span>Start something new</span>
-				</a>
-
-			</div>
-		</div>
-	</div>
-
-	<!-- Search: groupings of related interests -->
-	<div class="panel" data-for="search" id="explore">
+	<!-- Browse: category cards (empty query) or tag boxes (typed query) -->
+	<div class="panel" data-for="initial search" id="explore">
 		<div class="panel-inner">
 			<div class="groups-note" id="groups-note">
-				<p id="groups-note-text">A few interests to explore</p>
+				<p id="groups-note-text">Browse by category</p>
 				<button type="button" class="btn btn-link groups-create" id="groups-create" hidden></button>
 				<button type="button" class="btn btn-link groups-create" id="groups-retry" hidden>Try again</button>
 			</div>
-			<div class="groups" id="groups"></div>
+
+			{# CategoryCards: shown whenever the search box is empty. Never tags. #}
+			<div class="groups categories" id="categories">
+				{% for card in home_category_cards() %}
+				<section class="group category-card" data-category="{{ card.key }}"
+					style="--g: {{ card.strong }}; --pill-bg: {{ card.bg }}; --pill-fg: {{ card.fg }}"
+					aria-labelledby="cat-{{ card.key }}">
+					<h2 class="category-head" id="cat-{{ card.key }}">{{ card.name }}</h2>
+					{% if card.samples %}
+					<ul class="group-items">
+						{% for s in card.samples %}
+						<li><a class="group-chip category-chip" href="{{ s.url }}">{{ s.name }}<span class="visually-hidden">, {{ card.name }}</span></a></li>
+						{% endfor %}
+					</ul>
+					{% if card.total > card.samples | length %}
+					<p class="category-more">{{ card.total - card.samples | length }} more in {{ card.name }}</p>
+					{% endif %}
+					{% else %}
+					<p class="category-more">Nothing here yet.</p>
+					{% endif %}
+				</section>
+				{% endfor %}
+			</div>
+
+			{# TagBoxes: shown once something is typed (filled in by home.js) #}
+			<div class="groups" id="groups" hidden></div>
 		</div>
 	</div>
 
+	<!-- Create: nothing found -->
+	<div class="panel" data-for="create" id="create">
+		<div class="panel-inner">
+			<h2 class="create-title" id="create-title">Not here yet…</h2>
+			<p class="create-lead" id="create-lead">Be the first. Add it below and others can join.</p>
+
+			{% if current_user.is_authenticated %}
+			{% include "interest/_form.html" %}
+			{% else %}
+			<p class="create-signin"><a class="btn btn-primary" href="{{ url_for('login_get') }}">Sign in to create an interest</a></p>
+			{% endif %}
+		</div>
+	</div>
 
 </div>
-
-</div>
+<script type="application/json" id="category-palette">{{ category_palette() | tojson }}</script>
 {% endblock %}
 
 {% block scripts %}

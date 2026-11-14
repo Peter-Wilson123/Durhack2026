@@ -1,17 +1,53 @@
-{# ProfileHeader: avatar, name, @handle, year, connection count and the owner/connection action #}
+{# ProfileHeader: avatar, name, year, connection count, and the owner's actions.
+   In edit mode the owner sees inputs here instead (the ones the backend can't save yet
+   are disabled and say so). #}
 {% from "profile/_avatar.html" import avatar with context %}
 {% from "profile/_badge.html" import only_you %}
+{% set owner = p.viewer_relation == "self" %}
 <header class="profile-header">
 	{{ avatar(p.avatar_colour, "lg") }}
 
 	<div class="profile-ident">
-		<h1 class="profile-name">{{ p.display_name }}</h1>
-		{% if p.handle %}<p class="profile-handle">@{{ p.handle }}</p>{% endif %}
-		{% if p.year %}
-		<p class="profile-year">
-			{{ p.year }}
-			{% if not p.show_year %}{{ only_you("Hidden · only you can see this") }}{% endif %}
-		</p>
+		<div class="view-only">
+			<h1 class="profile-name">{{ p.display_name }}</h1>
+			{% if p.handle %}<p class="profile-handle">@{{ p.handle }}</p>{% endif %}
+			{% if p.year %}
+			<p class="profile-year">
+				{{ p.year }}
+				{% if not p.show_year %}{{ only_you("Hidden · only you can see this") }}{% endif %}
+			</p>
+			{% endif %}
+		</div>
+
+		{% if owner %}
+		<fieldset class="edit-only header-fields" aria-describedby="header-fields-note">
+			<legend class="visually-hidden">Name, year and avatar colour</legend>
+			<h1 class="visually-hidden">{{ p.display_name }}</h1>
+			<label class="form-label" for="edit-name">Display name</label>
+			<input class="form-control form-control-lg" id="edit-name" value="{{ p.display_name if p.has_display_name else '' }}"
+				placeholder="{{ p.display_name }}" maxlength="{{ NAME_MAX }}" disabled>
+			<div class="header-fields-row">
+				<div>
+					<label class="form-label" for="edit-year">Year</label>
+					<select class="form-select" id="edit-year" disabled>
+						{% for y in YEARS %}<option {% if p.show_year and p.year == y %}selected{% endif %}>{{ y }}</option>{% endfor %}
+						<option {% if not p.show_year %}selected{% endif %}>Don't show</option>
+					</select>
+				</div>
+				<div>
+					<span class="form-label d-block" id="edit-colour-label">Avatar colour</span>
+					<div class="swatches" role="radiogroup" aria-labelledby="edit-colour-label">
+						{% for key, (label, hex) in AVATAR_COLOURS.items() %}
+						<label class="swatch" style="--swatch: {{ hex }}">
+							<input type="radio" name="avatar_colour" value="{{ key }}" {% if p.avatar_colour == key %}checked{% endif %} disabled>
+							<span class="visually-hidden">{{ label }}</span>
+						</label>
+						{% endfor %}
+					</div>
+				</div>
+			</div>
+			<p class="field-note" id="header-fields-note">Name, year and avatar colour can't be saved yet: the backend has no place to store them.</p>
+		</fieldset>
 		{% endif %}
 	</div>
 
@@ -20,8 +56,9 @@
 			<strong>{{ p.connection_count }}</strong>
 			<span>{{ "Connection" if p.connection_count == 1 else "Connections" }}</span>
 		</p>
-		{% if p.viewer_relation == "self" %}
-		<a class="btn btn-outline-primary btn-sm" href="{{ url_for('profiles.edit', user_id=p.id) }}">Edit profile</a>
+		{% if owner %}
+		<button type="button" class="btn btn-outline-primary btn-sm view-only" data-action="edit">Edit profile</button>
+		<a class="preview-link view-only" href="{{ url_for('profiles.show', user_id=p.id, **{'as': 'other'}) }}">Preview as others see me</a>
 		{% elif p.viewer_relation == "connection" %}
 		<span class="connected-pill">✓ Connected</span>
 		{% endif %}
