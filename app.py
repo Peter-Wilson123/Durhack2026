@@ -34,6 +34,12 @@ with app.app_context():
     db.create_all()
 
 
+@app.get("/account")
+@flask_login.login_required
+def account():
+	return flask.render_template("account.html")
+
+
 @app.get("/login")
 def login_get():
     return flask.render_template("login.html")
@@ -52,15 +58,6 @@ def login_post():
     flask_login.login_user(user)
     return flask.redirect(flask.url_for("protected"))
 
-@app.route("/protected")
-@flask_login.login_required
-def protected():
-    return flask.render_template_string(
-        "Logged in as: {{ user.username }} (ID: {{ user.user_id }})",
-        user=flask_login.current_user,
-    )
-
-
 @app.route("/logout")
 def logout():
     flask_login.logout_user()
@@ -74,34 +71,33 @@ def register_success():
 
 @app.get("/register")
 def register():
-    return flask.render_template("register.html")
+	return flask.render_template("register.html")
 
 
 @app.post("/register")
 def register_post():
-    username = flask.request.form.get("username", "").strip()
-    display_name = flask.request.form.get("display_name", "").strip()
-    email = flask.request.form.get("email", "").strip()
-    password = flask.request.form.get("password", "")
-    bio = flask.request.form.get("bio", "").strip()
-    avatar_url = flask.request.form.get("avatar_url", "").strip()
+	username = flask.request.form.get("username", "").strip()
+	email = flask.request.form.get("email", "").strip()
+	password = flask.request.form.get("password", "")
+	confirm_password = flask.request.form.get("confirm_password", "")
 
-    # Make sure required fields are filled and not already taken
-    if not username or not display_name or not email or not password:
-        return flask.redirect(flask.url_for("register"))
+	# Make sure required fields are filled and not already taken
+	if not username or not email or not password:
+		return flask.redirect(flask.url_for("register"))
 
-    if auth.is_user(username, email):
-        return flask.redirect(flask.url_for("register"))
+	if password != confirm_password:
+		return flask.redirect(flask.url_for("register"))
 
-    auth.register_user(
-        username=username,
-        password=password,
-        email=email,
-        display_name=display_name,
-        bio=bio,
-        avatar_url=avatar_url,
-    )
-    return flask.redirect(flask.url_for("register_success"))
+	if auth.is_user(username, email):
+		return flask.redirect(flask.url_for("register"))
+
+	auth.register_user(
+		username=username,
+		email=email,
+		password=password,
+
+	)
+	return flask.redirect(flask.url_for("register_success"))
 
 
 with app.app_context():
