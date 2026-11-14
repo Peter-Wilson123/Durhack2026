@@ -1,15 +1,41 @@
-{# BioCard: the "About" card. Others only ever receive a published bio. #}
+{# BioCard: the "About" card. In edit mode the owner gets the bio editor in the same card.
+   The bio only becomes public through the explicit "Publish bio" button. #}
 {% from "profile/_badge.html" import only_you %}
+{% set owner = p.viewer_relation == "self" %}
 <section class="profile-card card-about" aria-labelledby="about-title">
 	<h2 id="about-title">About</h2>
-	{% if p.bio %}
-	<p class="bio-text">{{ p.bio }}</p>
-	{% if p.viewer_relation == "self" and not p.bio_published %}
-	<p class="card-note">{{ only_you("Draft · only you can see this") }}</p>
-	{% endif %}
-	{% elif p.viewer_relation == "self" %}
-	<p class="card-empty">You haven't written a bio yet. <a href="{{ url_for('profiles.edit', user_id=p.id) }}">Add one</a></p>
-	{% else %}
-	<p class="card-empty">No bio yet.</p>
+	<div class="view-only">
+		{% if p.bio %}
+		<p class="bio-text">{{ p.bio }}</p>
+		{% if owner and not p.bio_published %}
+		<p class="card-note">{{ only_you("Draft · only you can see this") }}</p>
+		{% endif %}
+		{% elif owner %}
+		<p class="card-empty">You haven't written a bio yet.</p>
+		{% else %}
+		<p class="card-empty">No bio yet.</p>
+		{% endif %}
+	</div>
+
+	{% if owner %}
+	<div class="edit-only bio-editor" id="bio-editor" data-saved-bio="{{ p.bio }}">
+		<label class="visually-hidden" for="edit-bio">Bio</label>
+		<textarea class="form-control" id="edit-bio" rows="4" maxlength="{{ BIO_MAX }}"
+			aria-describedby="bio-visibility bio-count bio-warning bio-note">{{ p.bio }}</textarea>
+		<div class="bio-meta">
+			<p class="bio-visibility" id="bio-visibility">Visible to all verified Durham students once published</p>
+			<p class="bio-count" id="bio-count"><span data-count>{{ p.bio | length }}</span> / {{ BIO_MAX }}</p>
+		</div>
+		<p class="bio-warning" id="bio-warning" hidden>
+			Contact details belong in Contact settings, where only connections see them.
+		</p>
+		<div class="bio-actions">
+			<button type="button" class="btn btn-primary btn-sm" data-action="publish-bio">Publish bio</button>
+			<span class="bio-save-status" id="bio-status" role="status" aria-live="polite"></span>
+		</div>
+		<p class="field-note" id="bio-note">
+			Until the backend supports drafts, a bio is only saved when you publish it, and it can't be cleared.
+		</p>
+	</div>
 	{% endif %}
 </section>

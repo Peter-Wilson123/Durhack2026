@@ -16,7 +16,7 @@
 	{% else %}
 	{% set c = p.contacts %}
 	{% if c.instagram or c.x or c.email %}
-	<ul class="contact-links">
+	<ul class="contact-links view-only">
 		{% if c.instagram %}
 		<li>
 			<a class="contact-link" href="https://www.instagram.com/{{ c.instagram | urlencode }}/" target="_blank" rel="noopener noreferrer"
@@ -51,10 +51,19 @@
 		{% endif %}
 	</ul>
 	{% else %}
-	<p class="card-empty">No contact details added yet.</p>
+	<p class="card-empty view-only">No contact details added yet.</p>
 	{% endif %}
 	{% if p.viewer_relation == "self" %}
-	<p class="card-note">{{ only_you("Only your connections see these") }}</p>
+	<p class="card-note view-only">{{ only_you("Only your connections see these") }}</p>
+	<div class="edit-only contact-editor" aria-describedby="contact-note">
+		<label class="form-label" for="edit-instagram">Instagram</label>
+		<input class="form-control mb-2" id="edit-instagram" placeholder="@handle" disabled>
+		<label class="form-label" for="edit-x">X</label>
+		<input class="form-control mb-2" id="edit-x" placeholder="@handle" disabled>
+		<label class="form-label" for="edit-email">Contact email</label>
+		<input class="form-control" id="edit-email" type="email" disabled>
+		<p class="field-note" id="contact-note">Contact details can't be saved yet: the backend has no contact fields. Only your connections will see them.</p>
+	</div>
 	{% endif %}
 	{% endif %}
 </section>

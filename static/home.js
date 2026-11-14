@@ -2,8 +2,10 @@
 	const GROUP_DEBOUNCE_MS = 250;  // long enough to stop groupings jumping on every key
 	const PILLS_PER_GROUP = 8;      // more than this collapse behind "+N more"
 	const TAG_DEBOUNCE_MS = 120;
-	const PALETTE_SIZE = 8;         // --g0 … --g7 in home.css
-	const MAX_TAGS = 10;
+	const PALETTE_SIZE = 8;         // --g0 … --g7 in home.css (only for boxes with no category)
+	const MAX_TAGS = 8;
+	const TAG_MIN = 2, TAG_MAX = 24;
+	const NAME_MIN = 2, NAME_MAX = 40, DESC_MAX = 200;
 	const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 	const $ = (id) => document.getElementById(id);
@@ -15,10 +17,15 @@
 	const noteText = $("groups-note-text");
 	const createLink = $("groups-create");
 	const retryButton = $("groups-retry");
-	const nameInput = $("interest-name");
+	const nameInput = $("interest-name");  // null when signed out (no create form)
+	const categoriesEl = $("categories");
+	// Category colours, keyed by backend category slug (from colours.py, the single source)
+	const PALETTE = JSON.parse($("category-palette").textContent);
+	const slugify = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 	const panels = home.querySelectorAll(".panel");
 
 	let nameEdited = false;
+	let checkSimilar = () => {};  // replaced by setUpCreateForm() when the form exists
 	let ignoreFocus = false;
 
 	// ---------- Small helpers ----------
@@ -70,9 +77,8 @@
 		if (home.dataset.state === state) return;
 		const wasInitial = home.dataset.state === "initial";
 		home.dataset.state = state;
-		panels.forEach((p) => { p.inert = p.dataset.for !== state; });
+		panels.forEach((p) => { p.inert = !p.dataset.for.split(" ").includes(state); });
 		if (wasInitial && window.scrollY > 0) window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
-		if (state === "search") ensureInitialGroups();
 	}
 
 	function closeSearch() {
@@ -80,7 +86,7 @@
 		nameEdited = false;
 		updateGroups.cancel();
 		hideResults();
-		showInitialGroups();
+		showCategories();
 		setState("initial");
 		ignoreFocus = true;
 		input.focus();
@@ -137,38 +143,26 @@
 
 	// ---------- Groupings: related interests (debounced) ----------
 	const fetchDiscover = latestFetcher();
-	let initialGroups = null;
 	let groupsShown = false;
 
-	let initialRequest = null;
-
-	// The starting selection is fetched once (separately, so searches can't cancel it)
-	async function ensureInitialGroups() {
-		if (!initialGroups) {
-			// TODO(backend): the brief wants a grid of categories with sample interests here,
-			// but there is no categories endpoint, so this shows random related groups instead.
-			setLoading(true);
-			initialRequest ||= fetch("/api/discover").then((r) => (r.ok ? r.json() : null)).catch(() => null);
-			const data = await initialRequest;
-			initialRequest = null;
-			setLoading(false);
-			if (!data) { showError(() => ensureInitialGroups()); return; }
-			initialGroups = data.groups;
-		}
-		if (!input.value.trim() && home.dataset.state !== "initial") showInitialGroups();
+	// Empty query: show the 10 category cards (rendered by the server), never tag boxes
+	function showCategories() {
+		setLoading(false);
+		groupsEl.hidden = true;
+		categoriesEl.hidden = false;
+		setNote("Browse by category", null);
 	}
 
-	function showInitialGroups() {
-		if (!initialGroups) { ensureInitialGroups(); return; }
-		setNote("A few interests to explore", null);
-		renderGroups(initialGroups);
+	// Typed query: show tag boxes instead of the category cards
+	function showTagBoxes() {
+		categoriesEl.hidden = true;
+		groupsEl.hidden = false;
 	}
 
 	async function runDiscover(raw) {
 		const q = raw.trim();
 		if (!q) {
-			if (home.dataset.state !== "initial") setState("search");
-			showInitialGroups();
+			showCategories();
 			return;
 		}
 		setLoading(true);
@@ -222,9 +216,14 @@
 		}
 	}
 
+	// Empty state: offer to create what they searched for
 	function goToCreate(query) {
 		setState("create");
-		if (!nameEdited) nameInput.value = query;
+		$("create-title").textContent = query ? `No match for “${query}”. Create it?` : "Create an interest";
+		if (nameInput && !nameEdited) {
+			nameInput.value = query;
+			checkSimilar();
+		}
 	}
 
 	// Stable colour per grouping while it stays on screen
@@ -240,6 +239,20 @@
 			colourOf.set(k, c);
 			used.add(c);
 		}
+	}
+
+	// Colours of a box's first category that colours.py knows, or null
+	function categoryStyle(g) {
+		for (const name of g.categories) {
+			const style = PALETTE[slugify(name)];
+			if (style) return style;
+		}
+		return null;
+	}
+
+	// The box's category group names (e.g. "Sport"), without repeats
+	function groupNames(g) {
+		return [...new Set(g.categories.map((name) => PALETTE[slugify(name)]?.name || name))];
 	}
 
 	function groupTitle(g) { return g.key.startsWith("__") ? g.title : "#" + g.title; }
@@ -286,13 +299,22 @@
 		const oldGroups = new Map([...groupsEl.querySelectorAll(":scope > .group")].map((n) => [n.dataset.key, n]));
 		const oldItems = new Map([...groupsEl.querySelectorAll("[data-flip^='i']")].map((n) => [n.dataset.flip, n]));
 
+		showTagBoxes();
 		assignColours(groups.map((g) => g.key));
 		const next = groups.map((g) => {
 			const node = oldGroups.get(g.key) || makeGroup(g);
 			oldGroups.delete(g.key);
-			node.style.setProperty("--g", `var(--g${colourOf.get(g.key)})`);
+			// Colour the box (and its pills) by its tag's category. TODO(backend): /api/discover
+			// doesn't return each interest's own category, so pills share their box's colour.
+			const style = categoryStyle(g);
+			node.style.setProperty("--g", style ? style.strong : `var(--g${colourOf.get(g.key)})`);
+			node.classList.toggle("has-category", !!style);
+			if (style) {
+				node.style.setProperty("--pill-bg", style.bg);
+				node.style.setProperty("--pill-fg", style.fg);
+			}
 			node.style.setProperty("--n", g.interests.length);
-			node.querySelector(".group-cats").textContent = g.categories.join(" · ");
+			node.querySelector(".group-cats").textContent = groupNames(g).join(" · ");
 			updateMore(node, g.interests.length);
 			node.setAttribute("aria-label", `${groupTitle(g)}: ${g.interests.length} interests`);
 			const list = node.querySelector(".group-items");
@@ -357,9 +379,13 @@
 	function onQuery() {
 		const raw = input.value;
 		if (!raw.trim()) {
+			// Cleared: straight back to the category cards
 			hideResults();
 			status.textContent = "";
+			updateGroups.cancel();
 			if (home.dataset.state === "create") setState("search");
+			showCategories();
+			return;
 		}
 		updateDropdown(raw);
 		updateGroups(raw);
@@ -407,158 +433,264 @@
 	createLink.addEventListener("click", () => {
 		nameEdited = false;
 		goToCreate(createLink.dataset.query || input.value.trim());
-		nameInput.focus({ preventScroll: true });
+		nameInput?.focus({ preventScroll: true });
 	});
 
-	home.querySelectorAll(".chip").forEach((chip) => {
-		chip.addEventListener("click", () => {
-			input.value = chip.dataset.interest;
-			input.focus();
-			onQuery();
+	// ---------- Create form (only there when signed in) ----------
+	if (nameInput) setUpCreateForm();
+
+	function setUpCreateForm() {
+		const form = $("create-form");
+		const descInput = $("interest-desc");
+		const nameError = $("interest-name-error");
+		const tagError = $("tag-error");
+		const createStatus = $("create-status");
+		const submitButton = $("create-submit");
+
+		nameInput.addEventListener("input", () => {
+			nameEdited = true;
+			nameError.textContent = "";
+			checkSimilarSoon();
 		});
-	});
 
-	home.querySelectorAll("[data-go]").forEach((card) => {
-		card.addEventListener("click", (e) => {
-			e.preventDefault();
-			if (card.dataset.go === "search") {
-				input.focus();
-			} else {
-				nameEdited = false;
-				goToCreate(input.value.trim());
-				nameInput.focus({ preventScroll: true });
+		// Description counter
+		descInput.addEventListener("input", () => {
+			form.querySelector("[data-desc-count]").textContent = descInput.value.length;
+		});
+
+		// "Did you mean one of these?": up to 3 existing interests with similar names,
+		// from the same search the home page uses (GET /api/interests)
+		const fetchSimilar = latestFetcher();
+		let exactMatch = null;
+		checkSimilar = async function () {
+			const q = nameInput.value.trim();
+			const box = $("similar");
+			if (q.length < NAME_MIN) { box.hidden = true; exactMatch = null; return; }
+			const data = await fetchSimilar(`/api/interests?q=${encodeURIComponent(q)}`);
+			if (data === undefined || nameInput.value.trim() !== q) return;
+			const found = (data?.results || []).slice(0, 3);
+			exactMatch = found.find((i) => i.name.toLowerCase() === q.toLowerCase()) || null;
+			$("similar-list").replaceChildren(...found.map((item) => {
+				const add = el("button", { type: "button", class: "btn btn-sm btn-outline-primary" }, "Add this instead");
+				add.setAttribute("aria-label", `Add ${item.name} to your interests instead`);
+				add.addEventListener("click", () => addExisting(item, add));
+				return el("li", {}, el("a", { href: item.url }, item.name), add);
+			}));
+			box.hidden = !found.length;
+		};
+		const checkSimilarSoon = debounce(checkSimilar, TAG_DEBOUNCE_MS * 2);
+
+		// Add an existing interest to your profile, then open it
+		async function addExisting(item, button) {
+			button.disabled = true;
+			createStatus.textContent = `Adding ${item.name}…`;
+			try {
+				await addToMyInterests(item.name);
+				window.location.href = item.url;
+			} catch {
+				button.disabled = false;
+				createStatus.textContent = "Couldn't add it. Please try again.";
+			}
+		}
+
+		// Check the fields; returns true if the form can be sent
+		function validate() {
+			const name = nameInput.value.trim();
+			nameError.textContent = "";
+			if (name.length < NAME_MIN || name.length > NAME_MAX) {
+				nameError.textContent = `Give it a name of ${NAME_MIN} to ${NAME_MAX} characters.`;
+				nameInput.focus();
+				return false;
+			}
+			if (exactMatch) {
+				nameError.textContent = `“${exactMatch.name}” already exists. Add it instead, or choose another name.`;
+				nameInput.focus();
+				return false;
+			}
+			if (descInput.value.length > DESC_MAX) return false;
+			return true;
+		}
+
+		// Create through POST /interests/new, add it to your profile, then open it
+		form.addEventListener("submit", async (event) => {
+			event.preventDefault();
+			if (!validate()) return;
+			submitButton.disabled = true;
+			createStatus.textContent = "Creating…";
+			try {
+				const response = await fetch(form.action, { method: "POST", body: new FormData(form) });
+				// The backend answers with a redirect to the new interest's page
+				if (!response.ok || !response.url.includes("/interests/")) throw new Error(response.status);
+				await addToMyInterests(nameInput.value.trim());
+				createStatus.textContent = "Created. Opening it…";
+				window.location.href = response.url;
+			} catch {
+				submitButton.disabled = false;
+				createStatus.textContent = "Couldn't create it. Check your connection and try again.";
 			}
 		});
-	});
 
-	nameInput.addEventListener("input", () => { nameEdited = true; });
+		// ---------- Tag chips ----------
+		const tagBox = $("tag-input");
+		const tagEntry = $("tag-entry");
+		const tagChips = $("tag-chips");
+		const tagList = $("tag-suggestions");
+		const tagValues = $("tag-values");
+		const fetchTags = latestFetcher();
+		const chosen = [];
+		let tagOptions = [];
+		let tagActive = -1;
 
-	// ---------- Tag input ----------
-	const tagBox = $("tag-input");
-	const tagEntry = $("tag-entry");
-	const tagChips = $("tag-chips");
-	const tagList = $("tag-suggestions");
-	const tagValues = $("tag-values");
-	const fetchTags = latestFetcher();
-	const chosen = [];
-	let tagOptions = [];
-	let tagActive = -1;
+		// Lower case, single spaces, no leading #
+		const normalise = (s) => s.trim().toLowerCase().replace(/^#+/, "").replace(/\s+/g, " ");
 
-	const normalise = (s) => s.trim().toLowerCase().replace(/^#+/, "").replace(/\s+/g, " ").slice(0, 40);
-
-	function renderChosen() {
-		tagChips.replaceChildren(...chosen.map((name) => {
-			const remove = el("button", { type: "button", "aria-label": `Remove tag ${name}` }, "×");
-			remove.addEventListener("click", () => { removeTag(name); tagEntry.focus(); });
-			return el("li", { class: "tag-chip" }, "#" + name, remove);
-		}));
-		tagValues.replaceChildren(...chosen.map((name) => el("input", { type: "hidden", name: "tags", value: name })));
-		const full = chosen.length >= MAX_TAGS;
-		tagEntry.disabled = full;
-		tagEntry.placeholder = full ? "That’s the maximum" : chosen.length ? "Add another" : "Add a tag";
-	}
-
-	function addTag(name) {
-		const tag = normalise(name);
-		if (!tag || chosen.includes(tag) || chosen.length >= MAX_TAGS) return;
-		chosen.push(tag);
-		tagEntry.value = "";
-		renderChosen();
-		refreshTagSuggestions();
-	}
-
-	function removeTag(name) {
-		const i = chosen.indexOf(name);
-		if (i >= 0) chosen.splice(i, 1);
-		renderChosen();
-	}
-
-	async function refreshTagSuggestions() {
-		const q = normalise(tagEntry.value);
-		const params = new URLSearchParams({ q });
-		chosen.forEach((t) => params.append("exclude", t));
-		const data = await fetchTags(`/api/tags?${params}`);
-		if (data === undefined || normalise(tagEntry.value) !== q || document.activeElement !== tagEntry) return;
-
-		tagOptions = (data?.results || []).map((t) => ({ name: t.name, count: t.count, isNew: false }));
-		if (q && !tagOptions.some((t) => t.name === q) && !chosen.includes(q)) {
-			tagOptions.push({ name: q, isNew: true });
+		function renderChosen() {
+			tagChips.replaceChildren(...chosen.map((name) => {
+				const remove = el("button", { type: "button", "aria-label": `Remove tag ${name}` }, "×");
+				remove.addEventListener("click", () => { removeTag(name); tagEntry.focus(); });
+				return el("li", { class: "tag-chip" }, "#" + name, remove);
+			}));
+			tagValues.replaceChildren(...chosen.map((name) => el("input", { type: "hidden", name: "tags", value: name })));
+			const full = chosen.length >= MAX_TAGS;
+			tagEntry.disabled = full;
+			tagEntry.placeholder = full ? "That’s the maximum" : chosen.length ? "Add another" : "Add a tag";
 		}
-		if (!tagOptions.length) { hideTagSuggestions(); return; }
 
-		tagActive = q ? 0 : -1;
-		tagList.replaceChildren(...tagOptions.map((t, i) => {
-			const li = t.isNew
-				? el("li", { id: `tag-opt-${i}`, role: "option" }, el("span", { class: "new-tag" }, `Create “#${t.name}”`))
-				: el("li", { id: `tag-opt-${i}`, role: "option" },
-					el("span", {}, "#", highlight(t.name, q)),
-					el("span", { class: "count" }, t.count === 1 ? "1 interest" : `${t.count} interests`));
-			li.addEventListener("pointerdown", (e) => e.preventDefault());
-			li.addEventListener("click", () => { addTag(t.name); tagEntry.focus(); });
-			return li;
-		}));
-		tagList.hidden = false;
-		tagEntry.setAttribute("aria-expanded", "true");
-		setTagActive(tagActive);
-	}
-	const refreshTagsSoon = debounce(refreshTagSuggestions, TAG_DEBOUNCE_MS);
+		function addTag(name) {
+			const tag = normalise(name);
+			tagError.textContent = "";
+			if (!tag) return;
+			if (tag.length < TAG_MIN || tag.length > TAG_MAX) {
+				tagError.textContent = `Tags need ${TAG_MIN} to ${TAG_MAX} characters.`;
+				return;
+			}
+			if (chosen.includes(tag)) { tagError.textContent = `#${tag} is already added.`; return; }
+			if (chosen.length >= MAX_TAGS) { tagError.textContent = `Up to ${MAX_TAGS} tags.`; return; }
+			chosen.push(tag);
+			tagEntry.value = "";
+			renderChosen();
+			refreshTagSuggestions();
+		}
 
-	function setTagActive(i) {
-		const items = tagList.children;
-		if (!items.length) return;
-		tagActive = i < 0 ? -1 : (i + items.length) % items.length;
-		[...items].forEach((li, n) => li.setAttribute("aria-selected", String(n === tagActive)));
-		if (tagActive >= 0) {
-			items[tagActive].scrollIntoView({ block: "nearest" });
-			tagEntry.setAttribute("aria-activedescendant", items[tagActive].id);
-		} else {
+		function removeTag(name) {
+			const i = chosen.indexOf(name);
+			if (i >= 0) chosen.splice(i, 1);
+			tagError.textContent = "";
+			renderChosen();
+		}
+
+		async function refreshTagSuggestions() {
+			const q = normalise(tagEntry.value);
+			const params = new URLSearchParams({ q });
+			chosen.forEach((t) => params.append("exclude", t));
+			const data = await fetchTags(`/api/tags?${params}`);
+			if (data === undefined || normalise(tagEntry.value) !== q || document.activeElement !== tagEntry) return;
+
+			tagOptions = (data?.results || []).map((t) => ({ name: t.name, count: t.count, isNew: false }));
+			if (q.length >= TAG_MIN && !tagOptions.some((t) => t.name === q) && !chosen.includes(q)) {
+				tagOptions.push({ name: q, isNew: true });
+			}
+			if (!tagOptions.length) { hideTagSuggestions(); return; }
+
+			tagActive = q ? 0 : -1;
+			tagList.replaceChildren(...tagOptions.map((t, i) => {
+				const li = t.isNew
+					? el("li", { id: `tag-opt-${i}`, role: "option" }, el("span", { class: "new-tag" }, `Create “#${t.name}”`))
+					: el("li", { id: `tag-opt-${i}`, role: "option" },
+						el("span", {}, "#", highlight(t.name, q)),
+						el("span", { class: "count" }, t.count === 1 ? "1 interest" : `${t.count} interests`));
+				li.addEventListener("pointerdown", (e) => e.preventDefault());
+				li.addEventListener("click", () => { addTag(t.name); tagEntry.focus(); });
+				return li;
+			}));
+			tagList.hidden = false;
+			tagEntry.setAttribute("aria-expanded", "true");
+			setTagActive(tagActive);
+		}
+		const refreshTagsSoon = debounce(refreshTagSuggestions, TAG_DEBOUNCE_MS);
+
+		function setTagActive(i) {
+			const items = tagList.children;
+			if (!items.length) return;
+			tagActive = i < 0 ? -1 : (i + items.length) % items.length;
+			[...items].forEach((li, n) => li.setAttribute("aria-selected", String(n === tagActive)));
+			if (tagActive >= 0) {
+				items[tagActive].scrollIntoView({ block: "nearest" });
+				tagEntry.setAttribute("aria-activedescendant", items[tagActive].id);
+			} else {
+				tagEntry.removeAttribute("aria-activedescendant");
+			}
+		}
+
+		function hideTagSuggestions() {
+			tagList.hidden = true;
+			tagActive = -1;
+			tagEntry.setAttribute("aria-expanded", "false");
 			tagEntry.removeAttribute("aria-activedescendant");
 		}
+
+		tagBox.addEventListener("click", (e) => { if (e.target === tagBox) tagEntry.focus(); });
+		tagEntry.addEventListener("focus", refreshTagSuggestions);
+		tagEntry.addEventListener("blur", hideTagSuggestions);
+		tagEntry.addEventListener("input", () => {
+			// A typed comma adds the tag before it
+			if (tagEntry.value.includes(",")) {
+				const parts = tagEntry.value.split(",");
+				tagEntry.value = parts.pop();
+				parts.forEach(addTag);
+			}
+			refreshTagsSoon();
+		});
+
+		tagEntry.addEventListener("keydown", (e) => {
+			const open = !tagList.hidden;
+			switch (e.key) {
+				case "ArrowDown":
+					e.preventDefault();
+					if (open) setTagActive(tagActive + 1); else refreshTagSuggestions();
+					break;
+				case "ArrowUp":
+					if (open) { e.preventDefault(); setTagActive(tagActive - 1); }
+					break;
+				case "Enter":
+				case ",":
+					e.preventDefault();  // never submit the form from here
+					if (e.key === "Enter" && open && tagActive >= 0) addTag(tagOptions[tagActive].name);
+					else if (tagEntry.value.trim()) addTag(tagEntry.value);
+					break;
+				case "Backspace":
+					if (!tagEntry.value && chosen.length) removeTag(chosen[chosen.length - 1]);
+					break;
+				case "Escape":
+					if (open) { e.preventDefault(); e.stopPropagation(); hideTagSuggestions(); }
+					break;
+			}
+		});
+
+		renderChosen();
 	}
 
-	function hideTagSuggestions() {
-		tagList.hidden = true;
-		tagActive = -1;
-		tagEntry.setAttribute("aria-expanded", "false");
-		tagEntry.removeAttribute("aria-activedescendant");
+	// Add an interest (by its exact name) to the signed-in user's profile.
+	// Uses the backend's POST /update-account, which redirects to /account when done.
+	async function addToMyInterests(name) {
+		const body = new URLSearchParams({ "new-interests": name });
+		const response = await fetch("/update-account", { method: "POST", body });
+		if (!response.ok || !response.url.endsWith("/account")) throw new Error(response.status);
 	}
-
-	tagBox.addEventListener("click", (e) => { if (e.target === tagBox) tagEntry.focus(); });
-	tagEntry.addEventListener("focus", refreshTagSuggestions);
-	tagEntry.addEventListener("blur", hideTagSuggestions);
-	tagEntry.addEventListener("input", refreshTagsSoon);
-
-	tagEntry.addEventListener("keydown", (e) => {
-		const open = !tagList.hidden;
-		switch (e.key) {
-			case "ArrowDown":
-				e.preventDefault();
-				if (open) setTagActive(tagActive + 1); else refreshTagSuggestions();
-				break;
-			case "ArrowUp":
-				if (open) { e.preventDefault(); setTagActive(tagActive - 1); }
-				break;
-			case "Enter":
-				e.preventDefault();  // never submit the form from here
-				if (open && tagActive >= 0) addTag(tagOptions[tagActive].name);
-				else if (tagEntry.value.trim()) addTag(tagEntry.value);
-				break;
-			case "Backspace":
-				if (!tagEntry.value && chosen.length) removeTag(chosen[chosen.length - 1]);
-				break;
-			case "Escape":
-				if (open) { e.preventDefault(); e.stopPropagation(); hideTagSuggestions(); }
-				break;
-		}
-	});
 
 	// ---------- Start ----------
-	panels.forEach((p) => { p.inert = p.dataset.for !== "initial"; });
-	renderChosen();
+	panels.forEach((p) => { p.inert = !p.dataset.for.split(" ").includes("initial"); });
 
-	// /?q=… (e.g. from a tag on an interest page) opens straight into a search
-	const startQuery = new URLSearchParams(location.search).get("q");
-	if (startQuery) {
+	// /?q=… (e.g. from a tag on an interest page) opens straight into a search,
+	// and /?q=…&create=1 (from the profile's "Create a new interest") opens the form
+	const params = new URLSearchParams(location.search);
+	const startQuery = params.get("q");
+	if (startQuery && params.get("create")) {
+		input.value = startQuery;
+		nameEdited = false;
+		goToCreate(startQuery);
+		nameInput?.focus({ preventScroll: true });
+	} else if (startQuery) {
 		input.value = startQuery;
 		setState("search");
 		runDiscover(startQuery);

@@ -1,0 +1,44 @@
+{# InterestForm: create an interest. Posts to the backend's POST /interests/new.
+   static/home.js validates it, shows "Did you mean…" matches, and after creating
+   adds the interest to your profile (POST /update-account) before opening it.
+   TODO(backend): no category field (categories come from tags) and no edit endpoint. #}
+<form class="create-form" id="create-form" method="post" action="/interests/new" novalidate>
+	<div class="create-name">
+		<label class="form-label" for="interest-name">Name</label>
+		<input class="form-control" id="interest-name" name="interest_name" minlength="2" maxlength="40" required
+			aria-describedby="interest-name-error">
+		<p class="field-error" id="interest-name-error" aria-live="polite"></p>
+
+		<div class="similar" id="similar" hidden>
+			<p class="similar-title" id="similar-title">Did you mean one of these?</p>
+			<ul class="similar-list" id="similar-list" aria-labelledby="similar-title"></ul>
+			<p class="form-text">Or carry on and create yours.</p>
+		</div>
+	</div>
+
+	<div class="create-desc">
+		<label class="form-label" for="interest-desc">Description <span class="optional">optional</span></label>
+		<textarea class="form-control" id="interest-desc" name="description" rows="5" maxlength="200"
+			placeholder="What is it, and what would you do together?" aria-describedby="interest-desc-count"></textarea>
+		<p class="form-text text-end" id="interest-desc-count"><span data-desc-count>0</span> / 200</p>
+	</div>
+
+	<div class="create-tags">
+		<label class="form-label" for="tag-entry">Tags <span class="optional">optional</span></label>
+		<div class="tag-input form-control" id="tag-input">
+			<ul class="tag-chips" id="tag-chips" aria-label="Chosen tags"></ul>
+			<input class="tag-entry" id="tag-entry" type="text" placeholder="Add a tag" maxlength="24"
+				role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="tag-suggestions"
+				aria-describedby="tag-help tag-error" autocomplete="off">
+			<ul class="tag-suggestions" id="tag-suggestions" role="listbox" aria-label="Tag suggestions" hidden></ul>
+		</div>
+		<p class="field-error" id="tag-error" aria-live="polite"></p>
+		<p class="form-text" id="tag-help">Up to 8 tags. Press Enter or comma to add one. Its category comes from the tags you choose.</p>
+		<div id="tag-values"></div>
+	</div>
+
+	<div class="create-submit">
+		<button class="btn btn-primary" type="submit" id="create-submit">Create interest</button>
+		<p class="create-status" id="create-status" role="status"></p>
+	</div>
+</form>

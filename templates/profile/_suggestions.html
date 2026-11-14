@@ -1,0 +1,33 @@
+{# SuggestedForYou (owner only): three interests similar to yours (profile_api.get_suggestions).
+   "Add" saves it to your profile; × hides it for now. Both bring in the next suggestion. #}
+<section class="profile-card card-suggested" id="suggested-card" aria-labelledby="suggested-title">
+	<h2 id="suggested-title">Suggested for you</h2>
+	{% if not p.interests %}
+	<p class="card-empty">Add your first interest and we'll suggest similar ones here.</p>
+	<button type="button" class="btn btn-primary btn-sm" data-action="start-adding">Add an interest</button>
+	{% elif p.suggestions %}
+	<ul class="suggestions">
+		{% for s in p.suggestions %}
+		{% set name, bg, fg = category_style(s.category_slug) %}
+		<li class="suggestion" style="--pill-bg: {{ bg }}; --pill-fg: {{ fg }}" data-id="{{ s.id }}">
+			<div class="suggestion-text">
+				<a class="suggestion-name" href="{{ s.url }}">{{ s.name }}</a>
+				<span class="suggestion-cat">{{ name }}</span>
+				{% if s.description %}<p class="suggestion-desc">{{ s.description }}</p>{% endif %}
+			</div>
+			<div class="suggestion-actions">
+				<button type="button" class="btn btn-sm btn-primary" data-suggest-add="{{ s.name }}"
+					aria-label="Add {{ s.name }} to your interests">Add</button>
+				<button type="button" class="suggestion-dismiss" data-suggest-dismiss="{{ s.id }}"
+					aria-label="Not interested in {{ s.name }}">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+				</button>
+			</div>
+		</li>
+		{% endfor %}
+	</ul>
+	{% else %}
+	<p class="card-empty">No more suggestions right now.</p>
+	{% endif %}
+	<p class="visually-hidden" id="suggest-status" role="status" aria-live="polite"></p>
+</section>

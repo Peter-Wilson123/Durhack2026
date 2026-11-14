@@ -3,8 +3,9 @@ Profile page routes. Every route needs a signed-in user.
 
 	GET /u/                     your own profile
 	GET /u/<user_id>            a profile
-	GET /u/<user_id>?as=other   owner-only preview as another viewer (debug mode only)
-	GET /u/<user_id>/edit       edit page (owner only; saving waits on a backend endpoint)
+	GET /u/<user_id>?as=other   owner-only preview as another student sees it
+	GET /u/<user_id>?edit=1     your own profile, opened in edit mode
+	GET /u/<user_id>/edit       redirects to ?edit=1
 
 Profiles are addressed by user_id for now. TODO(backend): switch to a public
 handle once one exists. Never use users.username here: it is the CIS code.
@@ -64,26 +65,42 @@ def mine():
 
 @bp.get("/u/<int:user_id>")
 def show(user_id):
-	# "View as" is a developer preview, only in debug mode, and only of your own page
-	preview_as = flask.request.args.get("as") if flask.current_app.debug else None
-	profile, error = _load(user_id, preview_as)
+	"""
+	A profile. The owner sees it editable in place (?edit=1 opens edit mode).
+	?as=other or ?as=connection: the owner previews their page as others see it
+	(get_profile ignores this for anyone else, so it can never reveal more).
+	?partial=body|interests|suggestions returns just that part, for in-page updates.
+	"""
+	profile, error = _load(user_id, flask.request.args.get("as"))
 	if error:
 		return error
-	if flask.request.args.get("partial"):
+
+	partial = flask.request.args.get("partial")
+	if partial == "interests":
+		return flask.render_template("profile/_interest_tags.html", p=profile)
+	if partial == "suggestions":
+		if profile["viewer_relation"] != "self":
+			return _error("forbidden", 403)
+		exclude = [int(x) for x in flask.request.args.get("exclude", "").split(",") if x.isdigit()]
+		profile["suggestions"] = profile_api.get_suggestions_for(user_id, exclude)
+		return flask.render_template("profile/_suggestions.html", p=profile)
+	if partial:
 		return flask.render_template("profile/_body.html", p=profile)
+
 	return flask.render_template(
-		"profile/page.html", p=profile, view_as_enabled=flask.current_app.debug and profile["can_preview"]
+		"profile/page.html",
+		p=profile,
+		# The three-way "Preview as" switch is a developer tool: debug mode only
+		view_as_enabled=flask.current_app.debug and profile["can_preview"],
 	)
 
 
 @bp.get("/u/<int:user_id>/edit")
 def edit(user_id):
-	profile, error = _load(user_id)
-	if error:
-		return error
-	if profile["viewer_relation"] != "self":
+	"""Old address of the edit page: editing now happens on the profile itself."""
+	if user_id != flask_login.current_user.user_id:
 		return _error("forbidden", 403)
-	return flask.render_template("profile/edit.html", p=profile)
+	return flask.redirect(flask.url_for("profiles.show", user_id=user_id, edit=1))
 
 
 def init_app(app):

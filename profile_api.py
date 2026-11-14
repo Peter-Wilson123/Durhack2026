@@ -15,7 +15,7 @@ get_profile(user_id, viewer, preview_as=None) returns:
 	has_display_name  False when display_name is the fallback
 	year, show_year   None, False: TODO(backend) no year column
 	avatar_colour     TODO(backend) no column: picked from the palette by user_id
-	interests         [{"name", "url", "category", "category_slug"}] from user_interests
+	interests         [{"id", "name", "url", "category", "category_slug"}] from user_interests
 	bio               users.bio ("" for none)
 	bio_published     True: TODO(backend) no draft column, and bios are already public on /view
 	connection_count  accepted rows in connections where the user is either side
@@ -23,7 +23,8 @@ get_profile(user_id, viewer, preview_as=None) returns:
 	                  None for everyone else (the template shows the locked card)
 	viewer_relation   "self" | "connection" | "other", worked out from connections
 	wave_status       "none" | "sent" | "received", from a pending connections row
-	can_preview       True when the viewer is the owner (allows the dev "View as" preview)
+	can_preview       True when the viewer is the owner (allows "Preview as others see me")
+	suggestions       owner only (else None): see get_suggestions()
 
 Privacy rules are applied HERE, before anything reaches a template.
 """
@@ -31,6 +32,7 @@ Privacy rules are applied HERE, before anything reaches a template.
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 
+import discovery
 from colours import AVATAR_COLOURS, category_slug, category_style
 from models import Connection, Interest, Tag, User, UserInterest, db
 
@@ -77,6 +79,7 @@ def get_profile(user_id, viewer, preview_as=None):
 	profile["viewer_relation"] = relation
 	profile["wave_status"] = wave_status if relation == "other" else "none"
 	profile["can_preview"] = can_preview
+	profile["suggestions"] = get_suggestions(user) if relation == "self" else None
 
 	# Privacy: only send what this viewer may see
 	if relation != "self":
@@ -111,6 +114,7 @@ def _interest(interest):
 	category = interest.category  # most common category across the interest's tags, or None
 	slug = category_slug(category.category_name) if category else None
 	return {
+		"id": interest.interest_id,
 		"name": interest.interest_name,
 		"url": f"/interests/{interest.interest_id}",
 		"category_slug": slug,
@@ -152,3 +156,40 @@ def _relation(viewer_id, user_id):
 		# Whoever asked first has "waved"
 		return "other", ("sent" if row.requester_id == viewer_id else "received")
 	return "other", "none"
+
+
+# ---------- Suggestions (owner only) ----------
+
+SUGGESTIONS = 3
+
+
+def get_suggestions(user, exclude_ids=(), limit=SUGGESTIONS):
+	"""
+	Interests similar to the user's own, best first, leaving out ones they have
+	and any ids in exclude_ids (cards they dismissed on this page).
+
+	TODO(backend): there is no suggestions endpoint. This ranks the backend's own
+	similarity function, discovery.related_interests() (shared tags, also used for
+	"You might like" on interest pages), across all the user's interests.
+	"""
+	owned = [ui.interest for ui in user.user_interests]
+	skip = {i.interest_id for i in owned} | set(exclude_ids)
+	scores = {}
+	found = {}
+	for interest in owned:
+		for rank, other in enumerate(discovery.related_interests(interest, limit=12)):
+			if other.interest_id in skip:
+				continue
+			# Higher when related to several of your interests, and near the top of each list
+			scores[other.interest_id] = scores.get(other.interest_id, 0) + 1 / (rank + 1)
+			found[other.interest_id] = other
+	best = sorted(scores, key=lambda i: (-scores[i], found[i].interest_name))[:limit]
+	return [{**_interest(found[i]), "description": found[i].description or ""} for i in best]
+
+
+def get_suggestions_for(user_id, exclude_ids=()):
+	"""get_suggestions() by user id, for the page's "Add" and dismiss refreshes."""
+	user = db.session.get(User, user_id)
+	if user is None:
+		raise ProfileNotFound(user_id)
+	return get_suggestions(user, exclude_ids)

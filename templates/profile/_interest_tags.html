@@ -1,19 +1,39 @@
-{# InterestTags: the "Interests" card. Each pill shows the interest and its category NAME
-   (colour alone isn't enough: some categories share a hue). Colours live in colours.py. #}
-<section class="profile-card card-interests" aria-labelledby="interests-title">
+{# InterestTags: the "Interests" card. Pills show the interest and its category NAME
+   (colour alone isn't enough). In edit mode the owner gets a remove (×) button on each
+   pill and an "Add interest" search. Changes save straight away (POST /update-account). #}
+{% set owner = p.viewer_relation == "self" %}
+<section class="profile-card card-interests" id="interests-card" aria-labelledby="interests-title">
 	<h2 id="interests-title">Interests</h2>
 	{% if p.interests %}
 	<ul class="interest-pills">
 		{% for i in p.interests %}
 		{% set name, bg, fg = category_style(i.category_slug) %}
-		<li>
-			<a class="interest-pill" href="{{ i.url }}" style="--pill-bg: {{ bg }}; --pill-fg: {{ fg }}">
+		<li class="interest-pill-item" style="--pill-bg: {{ bg }}; --pill-fg: {{ fg }}">
+			<a class="interest-pill" href="{{ i.url }}">
 				{{ i.name }}<span class="pill-cat"><span class="visually-hidden">, category: </span>{{ name }}</span>
 			</a>
+			{% if owner %}
+			<button type="button" class="pill-remove edit-only" data-remove="{{ i.name }}"
+				aria-label="Remove {{ i.name }} from your interests">
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+			</button>
+			{% endif %}
 		</li>
 		{% endfor %}
 	</ul>
+	{% elif owner %}
+	<p class="card-empty">You haven't added any interests yet.</p>
 	{% else %}
 	<p class="card-empty">No interests added yet.</p>
+	{% endif %}
+
+	{% if owner %}
+	{# AddInterest: search existing interests (the home page's GET /api/interests), or create a new one #}
+	<div class="add-interest edit-only">
+		<label class="form-label" for="add-interest-input">Add an interest</label>
+		<input class="form-control" id="add-interest-input" type="text" placeholder="Search interests"
+			role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="add-interest-options" autocomplete="off">
+		<ul class="add-interest-options" id="add-interest-options" role="listbox" aria-label="Interests to add" hidden></ul>
+	</div>
 	{% endif %}
 </section>

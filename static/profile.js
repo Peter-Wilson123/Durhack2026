@@ -1,5 +1,5 @@
-// Profile page behaviour. Everything here is optional: without JavaScript the
-// page still works (the dev Preview-as links just reload the page).
+// Profile page behaviour (also loaded by the interest page for its Wave buttons).
+// Everything here is optional: without JavaScript the profile still shows.
 
 // ---------- Wave ----------
 // TODO(backend): there are no wave endpoints yet, so these are STUBS that send
@@ -42,14 +42,14 @@ document.addEventListener("click", async (event) => {
 	}
 });
 
-// ---------- View as (demo): swap the profile body without reloading ----------
+// ---------- Preview as (debug-mode toggle): swap the profile body without reloading ----------
 
 const view = document.getElementById("profile-view");
 const loadError = document.getElementById("profile-load-error");
 
 async function showAs(link) {
 	const url = new URL(link.href);
-	url.searchParams.set("partial", "1");
+	url.searchParams.set("partial", "body");
 
 	view.setAttribute("aria-busy", "true");
 	loadError.hidden = true;
@@ -57,8 +57,6 @@ async function showAs(link) {
 		const response = await fetch(url);
 		if (!response.ok) throw new Error(response.status);
 		view.innerHTML = await response.text();
-
-		// Mark the chosen option, and keep the address bar shareable
 		document.querySelectorAll(".view-as a").forEach((a) => a.removeAttribute("aria-current"));
 		link.setAttribute("aria-current", "page");
 		history.replaceState(null, "", link.href);
@@ -70,91 +68,289 @@ async function showAs(link) {
 	}
 }
 
-if (view) {
-	document.querySelectorAll(".view-as a").forEach((link) => {
-		link.addEventListener("click", (event) => {
-			event.preventDefault();
-			showAs(link);
-		});
+document.querySelectorAll(".view-as a").forEach((link) => {
+	link.addEventListener("click", (event) => {
+		event.preventDefault();
+		showAs(link);
 	});
+});
+
+// ---------- Saving through the backend ----------
+
+// The backend's only update endpoint: POST /update-account with form fields
+// ("new-bio", "new-interests", "remove-interests"). It redirects to /account when done.
+async function updateAccount(fields) {
+	const response = await fetch("/update-account", { method: "POST", body: new URLSearchParams(fields) });
+	if (!response.ok || !response.url.endsWith("/account")) throw new Error(response.status);
 }
 
-// ---------- Edit form: counter, contact-detail warning, publish state, live preview ----------
+// Fetch one part of this profile again (?partial=interests or suggestions) and swap it in
+async function refreshPart(part, extra = {}) {
+	const body = document.querySelector(".profile-body");
+	const url = new URL(location.pathname, location.origin);
+	url.searchParams.set("partial", part);
+	Object.entries(extra).forEach(([k, v]) => url.searchParams.set(k, v));
+	const response = await fetch(url);
+	if (!response.ok) throw new Error(response.status);
+	const holder = document.createElement("template");
+	holder.innerHTML = await response.text();
+	const id = part === "interests" ? "interests-card" : "suggested-card";
+	body.querySelector("#" + id)?.replaceWith(holder.content);
+}
 
-const form = document.getElementById("edit-form");
+// ---------- Edit in place (owner only) ----------
+
+const profileBody = () => document.querySelector(".profile-body[data-relation='self']");
+const editStatus = () => document.getElementById("edit-status");
+const dismissed = new Set();  // suggestions hidden on this page (not saved anywhere)
+
+function say(text) {
+	const status = editStatus();
+	if (status) status.textContent = text;
+}
+
+function setEditing(on) {
+	const body = profileBody();
+	if (!body) return;
+	body.dataset.editing = on ? "true" : "false";
+	if (on) {
+		say("Editing your profile");
+		body.querySelector("#edit-bio")?.focus();
+	} else {
+		body.querySelector("[data-action='edit']")?.focus();
+	}
+}
+
+// Bio: has it been changed since it was last saved?
+function bioDirty() {
+	const editor = document.getElementById("bio-editor");
+	const bio = document.getElementById("edit-bio");
+	return !!editor && bio.value.trim() !== editor.dataset.savedBio.trim();
+}
 
 // Things that look like contact details: an email, a phone number, or an @handle
 const CONTACT_PATTERN = /[^\s@]+@[^\s@]+\.[^\s@]+|\+?\d[\d\s().-]{7,}\d|(^|\s)@[A-Za-z0-9._]{2,}/;
 
-function updateEditForm() {
-	const bio = form.querySelector("#bio");
+function updateBioEditor() {
+	const bio = document.getElementById("edit-bio");
+	if (!bio) return;
+	document.querySelector("#bio-count [data-count]").textContent = bio.value.length;
+	document.getElementById("bio-warning").hidden = !CONTACT_PATTERN.test(bio.value);
+	const publish = document.querySelector("[data-action='publish-bio']");
+	// The backend ignores an empty bio, so publishing one would do nothing
+	publish.disabled = !bio.value.trim() || !bioDirty();
+	document.getElementById("bio-status").textContent = bioDirty() ? "Not published yet" : "";
+}
+
+async function publishBio() {
+	const bio = document.getElementById("edit-bio");
+	const status = document.getElementById("bio-status");
 	const text = bio.value.trim();
-	const publishedText = form.dataset.publishedBio;
-	const isPublished = form.dataset.bioPublished === "true" && text === publishedText.trim();
-
-	// Character counter
-	form.querySelector("[data-count]").textContent = bio.value.length;
-
-	// Soft warning (never blocks saving)
-	form.querySelector("#bio-warning").hidden = !CONTACT_PATTERN.test(text);
-
-	// Publish / Unpublish buttons and status line
-	const status = form.querySelector("#bio-status");
-	const publish = form.querySelector("#bio-publish");
-	const unpublish = form.querySelector("#bio-unpublish");
-	publish.hidden = isPublished || !text;
-	if (unpublish) unpublish.hidden = !isPublished;
-
-	if (isPublished) {
-		status.dataset.state = "published";
-		status.textContent = "Published: everyone can see this bio.";
-	} else if (!text) {
-		status.dataset.state = "draft";
-		status.textContent = "No bio: others won't see an About section.";
-	} else {
-		status.dataset.state = "draft";
-		status.textContent = form.dataset.bioPublished === "true"
-			? "Edited: saving keeps these changes private until you publish them."
-			: "Draft: only you can see this until you publish it.";
-	}
-
-	updatePreview(text, isPublished);
-}
-
-// Mirror the form into the "How others see you" card
-function updatePreview(bioText, isPublished) {
-	const name = form.querySelector("#display_name");
-	const year = form.querySelector("#year");
-	const colour = form.querySelector("input[name=avatar_colour]:checked");
-
-	document.querySelector("[data-preview=name]").textContent = name.value.trim() || name.placeholder;
-
-	const yearLine = document.querySelector("[data-preview=year]");
-	yearLine.hidden = year.value === "hide";
-	yearLine.textContent = year.value === "hide" ? "" : year.value;
-
-	if (colour) {
-		const swatch = colour.closest(".swatch");
-		const avatar = document.querySelector("[data-preview=avatar] .avatar");
-		avatar.style.setProperty("--avatar", getComputedStyle(swatch).getPropertyValue("--swatch"));
-	}
-
-	// Others only see a published bio. Show the draft too, clearly marked.
-	const bio = document.querySelector("[data-preview=bio]");
-	if (isPublished) {
-		bio.dataset.state = "published";
-		bio.textContent = bioText;
-	} else if (bioText) {
-		bio.dataset.state = "draft";
-		bio.textContent = bioText;
-	} else {
-		bio.dataset.state = "hidden";
-		bio.textContent = "No bio shown.";
+	status.textContent = "Publishing…";
+	try {
+		await updateAccount({ "new-bio": text });
+		document.getElementById("bio-editor").dataset.savedBio = text;
+		// Show the new bio in the card when edit mode ends
+		const card = document.querySelector(".card-about .view-only");
+		card.replaceChildren(Object.assign(document.createElement("p"), { className: "bio-text", textContent: text }));
+		updateBioEditor();
+		status.textContent = "Published";
+		say("Bio published. All verified Durham students can now see it.");
+	} catch {
+		status.textContent = "Couldn't publish. Try again";
+		say("Your bio wasn't published. Check your connection and try again.");
 	}
 }
 
-if (form) {
-	form.addEventListener("input", updateEditForm);
-	form.addEventListener("change", updateEditForm);
-	updateEditForm();
+function cancelEdit() {
+	const editor = document.getElementById("bio-editor");
+	if (editor) {
+		document.getElementById("edit-bio").value = editor.dataset.savedBio;
+		updateBioEditor();
+	}
+	setEditing(false);
 }
+
+function doneEdit() {
+	if (bioDirty() && !confirm("Your bio changes aren't published. Leave edit mode and lose them?")) return;
+	cancelEdit();
+}
+
+// Remove an interest (× on a pill)
+async function removeInterest(button) {
+	const name = button.dataset.remove;
+	button.disabled = true;
+	say(`Removing ${name}…`);
+	try {
+		await updateAccount({ "remove-interests": name });
+		await refreshPart("interests");
+		await refreshPart("suggestions", { exclude: [...dismissed].join(",") });
+		say(`Removed ${name}.`);
+		document.getElementById("add-interest-input")?.focus();
+	} catch {
+		button.disabled = false;
+		say(`Couldn't remove ${name}. Please try again.`);
+	}
+}
+
+// Add an interest by its exact name (from the search, or a suggestion's "Add")
+async function addInterest(name) {
+	say(`Adding ${name}…`);
+	try {
+		await updateAccount({ "new-interests": name });
+		await refreshPart("interests");
+		await refreshPart("suggestions", { exclude: [...dismissed].join(",") });
+		say(`Added ${name}.`);
+		const status = document.getElementById("suggest-status");
+		if (status) status.textContent = `Added ${name}.`;
+		return true;
+	} catch {
+		say(`Couldn't add ${name}. Please try again.`);
+		return false;
+	}
+}
+
+// Hide a suggestion for now and bring in the next one
+async function dismissSuggestion(button) {
+	dismissed.add(button.dataset.suggestDismiss);
+	button.disabled = true;
+	try {
+		await refreshPart("suggestions", { exclude: [...dismissed].join(",") });
+		document.getElementById("suggest-status").textContent = "Suggestion hidden.";
+		document.querySelector("#suggested-card [data-suggest-add]")?.focus();
+	} catch {
+		button.disabled = false;
+	}
+}
+
+// ---------- "Add an interest" search box ----------
+let addMatches = [];
+let addActive = -1;
+let addController = null;
+
+async function searchToAdd(input) {
+	const list = document.getElementById("add-interest-options");
+	const q = input.value.trim();
+	addController?.abort();
+	if (!q) { hideAddOptions(); return; }
+	addController = new AbortController();
+	let results = [];
+	try {
+		const response = await fetch(`/api/interests?q=${encodeURIComponent(q)}`, { signal: addController.signal });
+		results = response.ok ? (await response.json()).results : [];
+	} catch (e) {
+		if (e.name === "AbortError") return;
+	}
+	if (input.value.trim() !== q) return;
+
+	// Leave out interests already on the profile
+	const owned = new Set([...document.querySelectorAll("#interests-card [data-remove]")].map((b) => b.dataset.remove.toLowerCase()));
+	addMatches = results.filter((r) => !owned.has(r.name.toLowerCase())).slice(0, 6);
+	const options = addMatches.map((r, i) => {
+		const li = document.createElement("li");
+		li.id = `add-opt-${i}`;
+		li.setAttribute("role", "option");
+		li.textContent = r.name;
+		li.addEventListener("pointerdown", (e) => e.preventDefault());
+		li.addEventListener("click", () => chooseToAdd(i));
+		return li;
+	});
+	// Always offer to create it
+	const create = document.createElement("li");
+	create.id = `add-opt-${addMatches.length}`;
+	create.setAttribute("role", "option");
+	create.className = "add-create";
+	create.textContent = `Create a new interest “${q}”`;
+	create.addEventListener("pointerdown", (e) => e.preventDefault());
+	create.addEventListener("click", () => chooseToAdd(addMatches.length));
+	list.replaceChildren(...options, create);
+	list.hidden = false;
+	addActive = -1;
+	input.setAttribute("aria-expanded", "true");
+}
+
+function hideAddOptions() {
+	const list = document.getElementById("add-interest-options");
+	const input = document.getElementById("add-interest-input");
+	if (!list) return;
+	list.hidden = true;
+	addActive = -1;
+	input.setAttribute("aria-expanded", "false");
+	input.removeAttribute("aria-activedescendant");
+}
+
+function setAddActive(i) {
+	const list = document.getElementById("add-interest-options");
+	const items = list.children;
+	if (!items.length) return;
+	addActive = (i + items.length) % items.length;
+	[...items].forEach((li, n) => li.setAttribute("aria-selected", String(n === addActive)));
+	document.getElementById("add-interest-input").setAttribute("aria-activedescendant", items[addActive].id);
+}
+
+async function chooseToAdd(i) {
+	const input = document.getElementById("add-interest-input");
+	if (i >= addMatches.length) {
+		// "Create a new interest": the create form on the home page, pre-filled
+		if (bioDirty() && !confirm("Your bio changes aren't published. Leave this page and lose them?")) return;
+		window.onbeforeunload = null;
+		location.href = `/?q=${encodeURIComponent(input.value.trim())}&create=1`;
+		return;
+	}
+	const name = addMatches[i].name;
+	hideAddOptions();
+	input.value = "";
+	if (await addInterest(name)) document.getElementById("add-interest-input")?.focus();
+}
+
+// ---------- Wiring (delegated, because cards are replaced after each change) ----------
+
+document.addEventListener("click", (event) => {
+	const target = event.target.closest("[data-action], [data-remove], [data-suggest-add], [data-suggest-dismiss]");
+	if (!target || !target.closest(".profile-body[data-relation='self']")) return;
+
+	if (target.dataset.remove) return removeInterest(target);
+	if (target.dataset.suggestAdd) { target.disabled = true; return addInterest(target.dataset.suggestAdd); }
+	if (target.dataset.suggestDismiss) return dismissSuggestion(target);
+
+	switch (target.dataset.action) {
+		case "edit": return setEditing(true);
+		case "cancel-edit": return cancelEdit();
+		case "done-edit": return doneEdit();
+		case "publish-bio": return publishBio();
+		case "start-adding":
+			setEditing(true);
+			return document.getElementById("add-interest-input")?.focus();
+	}
+});
+
+document.addEventListener("input", (event) => {
+	if (event.target.id === "edit-bio") updateBioEditor();
+	if (event.target.id === "add-interest-input") searchToAdd(event.target);
+});
+
+document.addEventListener("keydown", (event) => {
+	if (event.target.id === "add-interest-input") {
+		const open = !document.getElementById("add-interest-options").hidden;
+		if (event.key === "ArrowDown") { event.preventDefault(); if (open) setAddActive(addActive + 1); }
+		else if (event.key === "ArrowUp" && open) { event.preventDefault(); setAddActive(addActive - 1); }
+		else if (event.key === "Enter" && open) { event.preventDefault(); chooseToAdd(addActive >= 0 ? addActive : 0); }
+		else if (event.key === "Escape" && open) { event.preventDefault(); event.stopPropagation(); hideAddOptions(); }
+		return;
+	}
+	// Escape anywhere else in edit mode = Cancel
+	if (event.key === "Escape" && profileBody()?.dataset.editing === "true") cancelEdit();
+});
+
+document.addEventListener("focusout", (event) => {
+	if (event.target.id === "add-interest-input") hideAddOptions();
+});
+
+// Warn before leaving the page with an unpublished bio
+window.onbeforeunload = (event) => {
+	if (bioDirty()) { event.preventDefault(); return ""; }
+};
+
+// /u/<id>?edit=1 opens straight into edit mode
+if (view?.dataset.editOnLoad === "true") setEditing(true);
+updateBioEditor();

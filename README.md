@@ -24,12 +24,14 @@ The server applies these rules in `get_profile()`, so locked data is never
 sent to the page. Profiles use the user ID in URLs because the username is the
 CIS code, which must never be shown.
 
-**Not working yet (waiting on backend endpoints):**
-- Saving edits. The edit page has a live preview, but its buttons are switched off.
-- Sending and accepting waves. The buttons say "coming soon".
+**Editing your own profile** happens in place. **Edit profile** turns the same cards into editors, with a Cancel / Done bar.
+- **Saved now:** your bio (only through **Publish bio**) and your interests (× to remove, "Add an interest" to add). These use the backend's `POST /update-account`.
+- **Not saved yet:** name, year, avatar colour and contacts. They show as disabled inputs until the backend can store them.
+- **Suggested for you:** three interests similar to yours.
+- **Waves:** still send nothing ("coming soon").
 
-**Preview as** (Me / Connection / Other student) appears only on your own
-profile and only when Flask runs in debug mode.
+**Preview as others see me** shows your page the way other students see it. The three-way
+Me / Connection / Other student switch appears only when Flask runs in debug mode.
 
 **Files**
 - `profile_api.py`: data layer, mapping and privacy rules.
