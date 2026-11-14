@@ -41,23 +41,18 @@ def load_user(
 
 def register_user(
     username: str,
-    display_name: str,
     email: str,
-    password: str,
-    bio: str = "",
-    avatar_url: str = "",
+    password: str
 ) -> User:
     """Creates a new User row in SQLite using the user's form inputs."""
     clean_username = username.strip().lower()
     clean_email = email.strip().lower()
-    clean_display_name = display_name.strip() or clean_username
 
     new_user = User(
         username=clean_username,
-        display_name=clean_display_name,
         email=clean_email,
-        bio=(bio or "").strip(),
-        avatar_url=(avatar_url or "").strip(),
+
+
     )
     new_user.set_password(password)
 

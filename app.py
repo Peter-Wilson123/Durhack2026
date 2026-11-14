@@ -32,6 +32,11 @@ def user_loader(user_id):
 	return db.session.get(User, user_id)
 
 
+@login_manager.unauthorized_handler
+def unauthorized():
+	return flask.render_template("unauthorized.html")
+
+
 with app.app_context():
 	db.create_all()
 
@@ -78,35 +83,33 @@ def register_success():
 	return """Successfully regiseterd"""
 
 
-@app.get("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
+	if flask.request.method == "POST":
+		username = flask.request.form.get("username", "").strip()
+		email = flask.request.form.get("email", "").strip()
+		password = flask.request.form.get("password", "")
+		confirm_password = flask.request.form.get("confirm_password", "")
+
+		# Make sure required fields are filled and not already taken
+		if not username or not email or not password:
+			return flask.render_template("register.html")
+
+		if password != confirm_password:
+			return flask.render_template("register.html")
+
+		if auth.is_user(username, email):
+			return flask.render_template("register.html")
+
+		auth.register_user(
+			username=username,
+			email=email,
+			password=password,
+
+		)
+		return flask.redirect(flask.url_for("register_success"))
+
 	return flask.render_template("register.html")
-
-
-@app.post("/register")
-def register_post():
-	username = flask.request.form.get("username", "").strip()
-	email = flask.request.form.get("email", "").strip()
-	password = flask.request.form.get("password", "")
-	confirm_password = flask.request.form.get("confirm_password", "")
-
-	# Make sure required fields are filled and not already taken
-	if not username or not email or not password:
-		return flask.redirect(flask.url_for("register"))
-
-	if password != confirm_password:
-		return flask.redirect(flask.url_for("register"))
-
-	if auth.is_user(username, email):
-		return flask.redirect(flask.url_for("register"))
-
-	auth.register_user(
-		username=username,
-		email=email,
-		password=password,
-
-	)
-	return flask.redirect(flask.url_for("register_success"))
 
 
 @app.route("/search", methods=["GET", "POST"])
@@ -124,12 +127,13 @@ def search_getpost():
             if flask_login.current_user.is_authenticated
             else None
         )
-	users = search.find_users_by_interest(search_term, exclude_user_id=exclude_id)
+	users = search.find_users_by_interest(
+            search_term, exclude_user_id=exclude_id)
 	print(users)
 	return flask.render_template(
-		"search.html",
-		results=users,
-		search_term=search_term
+            "search.html",
+            results=users,
+            search_term=search_term
 	)
 
 
