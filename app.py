@@ -78,11 +78,6 @@ def logout():
 	return flask.redirect(flask.url_for("login_get"))
 
 
-@app.route("/register_success")
-def register_success():
-	return """Successfully regiseterd"""
-
-
 @app.route("/register", methods=["GET", "POST"])
 def register():
 	if flask.request.method == "POST":
@@ -107,7 +102,10 @@ def register():
 			password=password,
 
 		)
-		return flask.redirect(flask.url_for("register_success"))
+		user = auth.load_user(username=username,
+                        email=email, password=password)
+		flask_login.login_user(user)
+		return flask.render_template("success.html")
 
 	return flask.render_template("register.html")
 

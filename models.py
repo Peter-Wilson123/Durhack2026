@@ -18,7 +18,7 @@ class User(UserMixin, db.Model):
 
 	user_id = db.Column(db.Integer, primary_key=True)
 	username = db.Column(db.String(50), unique=True, nullable=False)
-	# display_name = db.Column(db.String(100), nullable=True)
+	display_name = db.Column(db.String(100), nullable=True)
 	email = db.Column(db.String(120), unique=True, nullable=False)
 	password_hash = db.Column(db.String(256), nullable=False)
 	bio = db.Column(db.Text, default="")
@@ -81,7 +81,8 @@ class User(UserMixin, db.Model):
 
 tag_categories = db.Table(
 	"tag_categories",
-	db.Column("tag_id", db.Integer, db.ForeignKey("tags.tag_id"), primary_key=True),
+	db.Column("tag_id", db.Integer, db.ForeignKey(
+		"tags.tag_id"), primary_key=True),
 	db.Column(
 		"category_id", db.Integer, db.ForeignKey("categories.category_id"), primary_key=True
 	),
@@ -92,7 +93,8 @@ interest_tags = db.Table(
 	db.Column(
 		"interest_id", db.Integer, db.ForeignKey("interests.interest_id"), primary_key=True
 	),
-	db.Column("tag_id", db.Integer, db.ForeignKey("tags.tag_id"), primary_key=True),
+	db.Column("tag_id", db.Integer, db.ForeignKey(
+		"tags.tag_id"), primary_key=True),
 )
 
 
@@ -105,7 +107,8 @@ class Category(db.Model):
 	category_name = db.Column(db.String(100), unique=True, nullable=False)
 	description = db.Column(db.Text, default="")
 
-	tags = db.relationship("Tag", secondary=tag_categories, back_populates="categories")
+	tags = db.relationship("Tag", secondary=tag_categories,
+	                       back_populates="categories")
 
 	@property
 	def interests(self):

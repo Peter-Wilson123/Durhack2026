@@ -21,7 +21,6 @@ def seed_database():
         db.drop_all()
         db.create_all()
 
-       
         # -------------------------------------------------------------------
         # 2. Users (All passwords set to: password123)
         # -------------------------------------------------------------------
@@ -80,31 +79,36 @@ def seed_database():
         i_mycology = Interest(
             interest_name="Urban Mycology & Spore Printing",
             description="Identifying wild fungi in city parks and making spore prints on glass.",
-            tags=get_or_create_tags(["mycology", "foraging", "botany", "nature"]),
+            tags=get_or_create_tags(
+                ["mycology", "foraging", "botany", "nature"]),
             created_by_user_id=None,
         )
         i_cyanotype = Interest(
             interest_name="Cyanotype Sun Printing",
             description="19th-century Prussian blue photographic printing using UV sunlight.",
-            tags=get_or_create_tags(["printmaking", "film photography", "botany"]),
+            tags=get_or_create_tags(
+                ["printmaking", "film photography", "botany"]),
             created_by_user_id=None,
         )
         i_translated_novellas = Interest(
             interest_name="1970s Japanese Surrealist Novellas",
             description="Reading and discussing short, dreamlike post-war fiction.",
-            tags=get_or_create_tags(["fiction", "japanese", "reading", "translation"]),
+            tags=get_or_create_tags(
+                ["fiction", "japanese", "reading", "translation"]),
             created_by_user_id=None,
         )
         i_watchmaking = Interest(
             interest_name="Mechanical Watch Escapement Tuning",
             description="Disassembling and regulating vintage wind-up wristwatches.",
-            tags=get_or_create_tags(["watchmaking", "mechanics", "restoration", "craftsmanship"]),
+            tags=get_or_create_tags(
+                ["watchmaking", "mechanics", "restoration", "craftsmanship"]),
             created_by_user_id=None,
         )
         i_field_recording = Interest(
             interest_name="Hydrophone & Contact-Mic Field Recording",
             description="Capturing underwater river sounds and bridge vibrations.",
-            tags=get_or_create_tags(["field recording", "music production", "nature"]),
+            tags=get_or_create_tags(
+                ["field recording", "music production", "nature"]),
             created_by_user_id=None,
         )
 
@@ -112,7 +116,8 @@ def seed_database():
         i_sundials = Interest(
             interest_name="Medieval Sundial Restoration",
             description="Mapping and calculating angles on historic stone church sundials.",
-            tags=get_or_create_tags(["medieval history", "heritage", "restoration", "astronomy"]),
+            tags=get_or_create_tags(
+                ["medieval history", "heritage", "restoration", "astronomy"]),
             creator=alex,
         )
 
