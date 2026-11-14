@@ -1,0 +1,12 @@
+{# ViewAsToggle (demo only): re-render the page as Me / Connection / Other student.
+   Plain links, so it works without JavaScript; static/profile.js swaps the page in place. #}
+<nav class="view-as" aria-label="View this profile as">
+	<span class="view-as-label" id="view-as-label">View as</span>
+	<ul>
+		{% for value, label in [("self", "Me"), ("connection", "Connection"), ("other", "Other student")] %}
+		<li><a href="{{ url_for('profiles.show', handle=p.handle, **{'as': value}) }}" data-as="{{ value }}"
+			{% if p.viewer_relation == value %}aria-current="page"{% endif %}>{{ label }}</a></li>
+		{% endfor %}
+	</ul>
+	<span class="view-as-demo">Demo</span>
+</nav>

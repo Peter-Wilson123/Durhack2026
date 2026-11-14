@@ -1,0 +1,22 @@
+{# Error state: the profile doesn't exist, or the data couldn't be loaded #}
+{% extends "base.html" %}
+
+{% block title %}Profile unavailable · Superposition{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-page profile-error">
+	{% if kind == "missing" %}
+	<h1>No one here</h1>
+	<p>There's no profile called <strong>@{{ handle }}</strong>. It may have been renamed or deleted.</p>
+	{% else %}
+	<h1>Couldn't load this profile</h1>
+	<p>Something went wrong on our side. Please try again in a moment.</p>
+	<p><a class="btn btn-primary" href="{{ request.url }}">Try again</a></p>
+	{% endif %}
+	<p><a href="/">Back to home</a></p>
+</div>
+{% endblock %}

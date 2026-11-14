@@ -1,0 +1,25 @@
+{# ProfilePage: the page at /u/<handle> #}
+{% extends "base.html" %}
+
+{% block title %}{{ p.display_name or ("@" ~ p.handle) }} · Superposition{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+	{% if view_as_enabled %}{% include "profile/_view_as_toggle.html" %}{% endif %}
+
+	<div id="profile-view">
+		{% include "profile/_body.html" %}
+	</div>
+	<p class="profile-load-error" id="profile-load-error" role="alert" hidden>
+		Couldn't load that view. <a href="" id="profile-retry">Try again</a>
+	</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='profile.js') }}"></script>
+{% endblock %}

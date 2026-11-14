@@ -1,0 +1,9 @@
+{# The whole profile for one viewer. Also served alone (?partial=1) when the View-as toggle changes #}
+<div class="profile-body" data-relation="{{ p.viewer_relation }}">
+	{% include "profile/_header.html" %}
+	<div class="profile-grid">
+		{% include "profile/_interest_tags.html" %}
+		{% include "profile/_bio_card.html" %}
+		{% include "profile/_contact_card.html" %}
+	</div>
+</div>
