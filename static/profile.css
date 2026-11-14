@@ -243,12 +243,30 @@
 }
 
 .interest-pill {
+    display: inline-flex;
+    align-items: baseline;
+    gap: .45rem;
     padding: .4rem .85rem;
     border-radius: 999px;
     background: var(--pill-bg);
     color: var(--pill-fg);
     font-weight: 600;
     font-size: .9rem;
+    text-decoration: none;
+}
+
+.interest-pill:hover {
+    box-shadow: inset 0 0 0 2px var(--pill-fg);
+    color: var(--pill-fg);
+}
+
+/* Category name inside the pill, so colour is never the only signal */
+.pill-cat {
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    opacity: .85;
 }
 
 /* Contact */

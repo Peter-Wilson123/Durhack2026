@@ -1,11 +1,16 @@
-{# InterestTags: the "Interests" card, with pills coloured by category (see colours.py) #}
+{# InterestTags: the "Interests" card. Each pill shows the interest and its category NAME
+   (colour alone isn't enough: some categories share a hue). Colours live in colours.py. #}
 <section class="profile-card card-interests" aria-labelledby="interests-title">
 	<h2 id="interests-title">Interests</h2>
 	{% if p.interests %}
 	<ul class="interest-pills">
 		{% for i in p.interests %}
-		{% set bg, fg = interest_colours(i.category) %}
-		<li class="interest-pill" style="--pill-bg: {{ bg }}; --pill-fg: {{ fg }}">{{ i.name }}</li>
+		{% set name, bg, fg = category_style(i.category_slug) %}
+		<li>
+			<a class="interest-pill" href="{{ i.url }}" style="--pill-bg: {{ bg }}; --pill-fg: {{ fg }}">
+				{{ i.name }}<span class="pill-cat"><span class="visually-hidden">, category: </span>{{ name }}</span>
+			</a>
+		</li>
 		{% endfor %}
 	</ul>
 	{% else %}

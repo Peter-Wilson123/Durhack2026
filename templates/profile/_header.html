@@ -5,8 +5,8 @@
 	{{ avatar(p.avatar_colour, "lg") }}
 
 	<div class="profile-ident">
-		<h1 class="profile-name">{{ p.display_name or p.handle }}</h1>
-		<p class="profile-handle">@{{ p.handle }}</p>
+		<h1 class="profile-name">{{ p.display_name }}</h1>
+		{% if p.handle %}<p class="profile-handle">@{{ p.handle }}</p>{% endif %}
 		{% if p.year %}
 		<p class="profile-year">
 			{{ p.year }}
@@ -21,7 +21,7 @@
 			<span>{{ "Connection" if p.connection_count == 1 else "Connections" }}</span>
 		</p>
 		{% if p.viewer_relation == "self" %}
-		<a class="btn btn-outline-primary btn-sm" href="{{ url_for('profiles.edit', handle=p.handle) }}">Edit profile</a>
+		<a class="btn btn-outline-primary btn-sm" href="{{ url_for('profiles.edit', user_id=p.id) }}">Edit profile</a>
 		{% elif p.viewer_relation == "connection" %}
 		<span class="connected-pill">✓ Connected</span>
 		{% endif %}

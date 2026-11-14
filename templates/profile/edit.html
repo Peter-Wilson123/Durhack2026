@@ -1,4 +1,6 @@
-{# EditProfileForm: the owner's edit page, with a live "How others see you" preview #}
+{# EditProfileForm: the owner's edit page, with a live "How others see you" preview.
+   TODO(backend): there is no profile update endpoint yet, so the save and publish
+   buttons are disabled and the form has no action. Wire them up once it exists. #}
 {% extends "base.html" %}
 {% from "profile/_avatar.html" import avatar with context %}
 
@@ -10,24 +12,16 @@
 
 {% block content %}
 <div class="profile-page edit-page">
-	<a class="back-link" href="{{ url_for('profiles.show', handle=p.handle) }}">← Back to profile</a>
+	<a class="back-link" href="{{ url_for('profiles.show', user_id=p.id) }}">← Back to profile</a>
 	<h1 class="edit-title">Edit profile</h1>
 
-	{% if errors %}
-	<div class="alert alert-danger" role="alert">
-		<p class="mb-1"><strong>Please fix these:</strong></p>
-		<ul class="mb-0">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+	<div class="alert alert-warning" role="status">
+		<strong>Saving isn't available yet.</strong> You can try changes here and see them in the preview,
+		but they won't be saved until the backend adds a way to update profiles.
 	</div>
-	{% elif saved %}
-	<div class="alert alert-success" role="status">
-		{% if saved == "publish" %}Saved, and your bio is now public.
-		{% elif saved == "unpublish" %}Saved. Your bio is now a private draft.
-		{% else %}Changes saved.{% endif %}
-	</div>
-	{% endif %}
 
 	<div class="edit-layout">
-		<form class="edit-form" method="post" id="edit-form" novalidate
+		<form class="edit-form" id="edit-form" onsubmit="return false"
 			data-published-bio="{{ p.bio if p.bio_published else '' }}" data-bio-published="{{ 'true' if p.bio_published else 'false' }}">
 
 			<fieldset>
@@ -36,14 +30,9 @@
 				<div class="mb-3">
 					<label class="form-label" for="display_name">Display name <span class="optional">optional</span></label>
 					<input class="form-control" id="display_name" name="display_name" maxlength="{{ NAME_MAX }}"
-						value="{{ p.display_name or '' }}" placeholder="{{ p.handle }}" aria-describedby="display_name-help">
-					<div class="form-text" id="display_name-help">Up to {{ NAME_MAX }} characters. Leave blank to show your handle.</div>
-				</div>
-
-				<div class="mb-3">
-					<label class="form-label" for="handle">Handle</label>
-					<input class="form-control" id="handle" value="@{{ p.handle }}" readonly aria-describedby="handle-help">
-					<div class="form-text" id="handle-help">Your handle can't be changed here.</div>
+						value="{{ p.display_name if p.has_display_name else '' }}" placeholder="{{ p.display_name }}"
+						aria-describedby="display_name-help">
+					<div class="form-text" id="display_name-help">Up to {{ NAME_MAX }} characters.</div>
 				</div>
 
 				<div class="mb-3">
@@ -82,16 +71,10 @@
 					<p class="bio-warning" id="bio-warning" hidden>
 						Contact details belong in Contact settings, where only connections see them.
 					</p>
-					<p class="bio-status" id="bio-status" data-state="{{ 'published' if p.bio_published else 'draft' }}">
-						{% if p.bio_published %}Published: everyone can see this bio.
-						{% else %}Draft: only you can see this until you publish it.{% endif %}
-					</p>
+					<p class="bio-status" id="bio-status" data-state="{{ 'published' if p.bio_published else 'draft' }}"></p>
 					<div class="bio-actions">
-						{% if p.bio_published %}
-						<button class="btn btn-outline-secondary btn-sm" type="submit" name="action" value="unpublish" id="bio-unpublish">Unpublish</button>
-						{% endif %}
-						<button class="btn btn-outline-primary btn-sm" type="submit" name="action" value="publish" id="bio-publish"
-							{% if p.bio_published %}hidden{% endif %}>Publish bio</button>
+						<button class="btn btn-outline-secondary btn-sm" type="button" id="bio-unpublish" disabled>Unpublish</button>
+						<button class="btn btn-outline-primary btn-sm" type="button" id="bio-publish" disabled>Publish bio</button>
 					</div>
 				</div>
 			</fieldset>
@@ -113,16 +96,17 @@
 					</div>
 				</div>
 				<div class="mb-3">
-					<label class="form-label" for="email">Email</label>
+					<label class="form-label" for="email">Contact email</label>
 					<input class="form-control" type="email" id="email" name="email" value="{{ p.contacts.email if p.contacts else '' }}" autocomplete="off">
 				</div>
 			</fieldset>
 
 			<div class="edit-actions">
-				<button class="btn btn-primary" type="submit" name="action" value="save">Save changes</button>
-				<a class="btn btn-link" href="{{ url_for('profiles.show', handle=p.handle) }}">Cancel</a>
+				<button class="btn btn-primary" type="button" disabled aria-describedby="save-unavailable">Save changes</button>
+				<a class="btn btn-link" href="{{ url_for('profiles.show', user_id=p.id) }}">Cancel</a>
 			</div>
-			<p class="form-text">Saving never publishes your bio: only the “Publish bio” button does.</p>
+			<p class="form-text" id="save-unavailable">Saving and publishing are switched off until the backend can store them.
+				When they work, saving will never publish your bio: only “Publish bio” will.</p>
 		</form>
 
 		<aside class="preview" aria-labelledby="preview-title">
@@ -131,14 +115,11 @@
 				<div class="preview-head">
 					<span data-preview="avatar">{{ avatar(p.avatar_colour, "md") }}</span>
 					<div>
-						<p class="preview-name" data-preview="name">{{ p.display_name or p.handle }}</p>
-						<p class="preview-handle">@{{ p.handle }}</p>
+						<p class="preview-name" data-preview="name">{{ p.display_name }}</p>
 						<p class="preview-year" data-preview="year" {% if not p.show_year %}hidden{% endif %}>{{ p.year or "" }}</p>
 					</div>
 				</div>
-				<p class="preview-bio" data-preview="bio" data-state="{{ 'published' if p.bio_published and p.bio else 'hidden' }}">
-					{%- if p.bio_published and p.bio %}{{ p.bio }}{% else %}No bio shown.{% endif -%}
-				</p>
+				<p class="preview-bio" data-preview="bio" data-state="hidden">No bio shown.</p>
 			</div>
 			<p class="preview-note">Other students never see your contact details. Connections see them on your Contact card.</p>
 		</aside>
