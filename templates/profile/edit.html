@@ -1,0 +1,151 @@
+{# EditProfileForm: the owner's edit page, with a live "How others see you" preview #}
+{% extends "base.html" %}
+{% from "profile/_avatar.html" import avatar with context %}
+
+{% block title %}Edit profile · Superposition{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-page edit-page">
+	<a class="back-link" href="{{ url_for('profiles.show', handle=p.handle) }}">← Back to profile</a>
+	<h1 class="edit-title">Edit profile</h1>
+
+	{% if errors %}
+	<div class="alert alert-danger" role="alert">
+		<p class="mb-1"><strong>Please fix these:</strong></p>
+		<ul class="mb-0">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+	</div>
+	{% elif saved %}
+	<div class="alert alert-success" role="status">
+		{% if saved == "publish" %}Saved, and your bio is now public.
+		{% elif saved == "unpublish" %}Saved. Your bio is now a private draft.
+		{% else %}Changes saved.{% endif %}
+	</div>
+	{% endif %}
+
+	<div class="edit-layout">
+		<form class="edit-form" method="post" id="edit-form" novalidate
+			data-published-bio="{{ p.bio if p.bio_published else '' }}" data-bio-published="{{ 'true' if p.bio_published else 'false' }}">
+
+			<fieldset>
+				<legend>Basics</legend>
+
+				<div class="mb-3">
+					<label class="form-label" for="display_name">Display name <span class="optional">optional</span></label>
+					<input class="form-control" id="display_name" name="display_name" maxlength="{{ NAME_MAX }}"
+						value="{{ p.display_name or '' }}" placeholder="{{ p.handle }}" aria-describedby="display_name-help">
+					<div class="form-text" id="display_name-help">Up to {{ NAME_MAX }} characters. Leave blank to show your handle.</div>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="handle">Handle</label>
+					<input class="form-control" id="handle" value="@{{ p.handle }}" readonly aria-describedby="handle-help">
+					<div class="form-text" id="handle-help">Your handle can't be changed here.</div>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="year">Year</label>
+					<select class="form-select" id="year" name="year">
+						{% for y in YEARS %}
+						<option value="{{ y }}" {% if p.show_year and p.year == y %}selected{% endif %}>{{ y }}</option>
+						{% endfor %}
+						<option value="hide" {% if not p.show_year %}selected{% endif %}>Don't show</option>
+					</select>
+				</div>
+
+				<div class="mb-1">
+					<span class="form-label d-block" id="colour-label">Avatar colour</span>
+					<div class="swatches" role="radiogroup" aria-labelledby="colour-label">
+						{% for key, (label, hex) in AVATAR_COLOURS.items() %}
+						<label class="swatch" style="--swatch: {{ hex }}">
+							<input type="radio" name="avatar_colour" value="{{ key }}" {% if p.avatar_colour == key %}checked{% endif %}>
+							<span class="visually-hidden">{{ label }}</span>
+						</label>
+						{% endfor %}
+					</div>
+				</div>
+			</fieldset>
+
+			<fieldset>
+				<legend>Bio</legend>
+				<div class="bio-field">
+					<label class="form-label" for="bio">About you</label>
+					<textarea class="form-control" id="bio" name="bio" rows="3" maxlength="{{ BIO_MAX }}"
+						aria-describedby="bio-visibility bio-count bio-warning">{{ p.bio }}</textarea>
+					<div class="bio-meta">
+						<p class="bio-visibility" id="bio-visibility">Visible to all verified Durham students once published</p>
+						<p class="bio-count" id="bio-count"><span data-count>{{ p.bio | length }}</span> / {{ BIO_MAX }}</p>
+					</div>
+					<p class="bio-warning" id="bio-warning" hidden>
+						Contact details belong in Contact settings, where only connections see them.
+					</p>
+					<p class="bio-status" id="bio-status" data-state="{{ 'published' if p.bio_published else 'draft' }}">
+						{% if p.bio_published %}Published: everyone can see this bio.
+						{% else %}Draft: only you can see this until you publish it.{% endif %}
+					</p>
+					<div class="bio-actions">
+						{% if p.bio_published %}
+						<button class="btn btn-outline-secondary btn-sm" type="submit" name="action" value="unpublish" id="bio-unpublish">Unpublish</button>
+						{% endif %}
+						<button class="btn btn-outline-primary btn-sm" type="submit" name="action" value="publish" id="bio-publish"
+							{% if p.bio_published %}hidden{% endif %}>Publish bio</button>
+					</div>
+				</div>
+			</fieldset>
+
+			<fieldset>
+				<legend>Contact <span class="optional">all optional · only connections see these</span></legend>
+				<div class="mb-3">
+					<label class="form-label" for="instagram">Instagram handle</label>
+					<div class="input-group">
+						<span class="input-group-text">@</span>
+						<input class="form-control" id="instagram" name="instagram" value="{{ p.contacts.instagram if p.contacts else '' }}" autocomplete="off">
+					</div>
+				</div>
+				<div class="mb-3">
+					<label class="form-label" for="x">X handle</label>
+					<div class="input-group">
+						<span class="input-group-text">@</span>
+						<input class="form-control" id="x" name="x" value="{{ p.contacts.x if p.contacts else '' }}" autocomplete="off">
+					</div>
+				</div>
+				<div class="mb-3">
+					<label class="form-label" for="email">Email</label>
+					<input class="form-control" type="email" id="email" name="email" value="{{ p.contacts.email if p.contacts else '' }}" autocomplete="off">
+				</div>
+			</fieldset>
+
+			<div class="edit-actions">
+				<button class="btn btn-primary" type="submit" name="action" value="save">Save changes</button>
+				<a class="btn btn-link" href="{{ url_for('profiles.show', handle=p.handle) }}">Cancel</a>
+			</div>
+			<p class="form-text">Saving never publishes your bio: only the “Publish bio” button does.</p>
+		</form>
+
+		<aside class="preview" aria-labelledby="preview-title">
+			<h2 id="preview-title">How others see you</h2>
+			<div class="preview-card">
+				<div class="preview-head">
+					<span data-preview="avatar">{{ avatar(p.avatar_colour, "md") }}</span>
+					<div>
+						<p class="preview-name" data-preview="name">{{ p.display_name or p.handle }}</p>
+						<p class="preview-handle">@{{ p.handle }}</p>
+						<p class="preview-year" data-preview="year" {% if not p.show_year %}hidden{% endif %}>{{ p.year or "" }}</p>
+					</div>
+				</div>
+				<p class="preview-bio" data-preview="bio" data-state="{{ 'published' if p.bio_published and p.bio else 'hidden' }}">
+					{%- if p.bio_published and p.bio %}{{ p.bio }}{% else %}No bio shown.{% endif -%}
+				</p>
+			</div>
+			<p class="preview-note">Other students never see your contact details. Connections see them on your Contact card.</p>
+		</aside>
+	</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='profile.js') }}"></script>
+{% endblock %}

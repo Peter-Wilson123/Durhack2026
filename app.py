@@ -3,6 +3,7 @@ import flask_login
 import auth
 import discovery
 import interests
+import profiles
 import search
 import find_new_interest
 from models import (
@@ -43,6 +44,9 @@ with app.app_context():
 
 # Interest discovery, tags and interest pages (see interests.py)
 interests.init_app(app)
+
+# Profile pages at /u/<handle> (see profiles.py; mock data in profile_api.py)
+profiles.init_app(app)
 
 
 @app.get("/account")

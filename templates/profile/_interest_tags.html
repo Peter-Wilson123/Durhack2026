@@ -1,0 +1,14 @@
+{# InterestTags: the "Interests" card, with pills coloured by category (see colours.py) #}
+<section class="profile-card card-interests" aria-labelledby="interests-title">
+	<h2 id="interests-title">Interests</h2>
+	{% if p.interests %}
+	<ul class="interest-pills">
+		{% for i in p.interests %}
+		{% set bg, fg = interest_colours(i.category) %}
+		<li class="interest-pill" style="--pill-bg: {{ bg }}; --pill-fg: {{ fg }}">{{ i.name }}</li>
+		{% endfor %}
+	</ul>
+	{% else %}
+	<p class="card-empty">No interests added yet.</p>
+	{% endif %}
+</section>
