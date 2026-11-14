@@ -21,9 +21,10 @@ Account Page
     </span>
   </p>
   <p><strong>Interest Categories:</strong> <span id="interest-categories">
-
       {% for i in current_user.user_interests %}
-      <a> {{i.interest.category.category_name}}, </a>
+        {% if i.interest.category %}
+          <a>{{ i.interest.category.category_name }}, </a>
+        {% endif %}
       {% endfor %}
     </span></p>
   <p><strong>Bio:</strong> <span id="display-bio">{{ current_user.bio }}</span></p>
