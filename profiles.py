@@ -1,46 +1,55 @@
 """
-Profile page routes.
+Profile page routes. Every route needs a signed-in user.
 
-	GET  /u/                  list of demo profiles
-	GET  /u/<handle>          a profile (add ?as=self|connection|other to "view as")
-	GET  /u/<handle>?partial=1   just the profile body, for the View-as toggle
-	GET  /u/<handle>/edit     edit form (owner only)
-	POST /u/<handle>/edit     save edits (owner only)
+	GET /u/                     your own profile
+	GET /u/<user_id>            a profile
+	GET /u/<user_id>?as=other   owner-only preview as another viewer (debug mode only)
+	GET /u/<user_id>/edit       edit page (owner only; saving waits on a backend endpoint)
 
-All data comes from profile_api.py, which is mock data for now.
+Profiles are addressed by user_id for now. TODO(backend): switch to a public
+handle once one exists. Never use users.username here: it is the CIS code.
+All data comes from profile_api.py.
 """
 
 import flask
+import flask_login
+from sqlalchemy.exc import SQLAlchemyError
 
 import colours
 import profile_api
 
 bp = flask.Blueprint("profiles", __name__)
 
-# The "View as" toggle lets anyone see a profile as any relation. That's fine
-# for mock data and demos, but must be switched off once data is real.
-VIEW_AS_ENABLED = True
-
 
 def _template_helpers():
 	return {
-		"interest_colours": colours.interest_colours,
+		"category_style": colours.category_style,
 		"avatar_colour": colours.avatar_colour,
 		"AVATAR_COLOURS": colours.AVATAR_COLOURS,
 		"YEARS": profile_api.YEARS,
 		"BIO_MAX": profile_api.BIO_MAX,
 		"NAME_MAX": profile_api.NAME_MAX,
-		"view_as_enabled": VIEW_AS_ENABLED,
 	}
 
 
 bp.app_context_processor(_template_helpers)
 
 
-def _load(handle, as_relation=None):
+@bp.before_request
+def require_sign_in():
+	"""Send signed-out visitors to the sign-in page."""
+	if not flask_login.current_user.is_authenticated:
+		return flask.redirect(flask.url_for("login_get"))
+
+
+def _error(kind, status):
+	return flask.make_response(flask.render_template("profile/error.html", kind=kind), status)
+
+
+def _load(user_id, preview_as=None):
 	"""get_profile(), turning failures into the right error page."""
 	try:
-		return profile_api.get_profile(handle, as_relation), None
+		return profile_api.get_profile(user_id, flask_login.current_user, preview_as), None
 	except profile_api.ProfileNotFound:
 		return None, flask.make_response(
 			flask.render_template("profile/error.html",
@@ -51,61 +60,39 @@ def _load(handle, as_relation=None):
 			flask.render_template("profile/error.html",
 			                      handle=handle, kind="unavailable"), 503
 		)
+		return None, _error("missing", 404)
+	except SQLAlchemyError:
+		flask.current_app.logger.exception("Profile lookup failed")
+		return None, _error("unavailable", 503)
 
 
 @bp.get("/u/")
-def index():
-	return flask.render_template("profile/index.html", profiles=profile_api.demo_handles())
+def mine():
+	return flask.redirect(flask.url_for("profiles.show", user_id=flask_login.current_user.user_id))
 
 
-@bp.get("/u/<handle>")
-def show(handle):
-	as_relation = flask.request.args.get("as") if VIEW_AS_ENABLED else None
-	profile, error = _load(handle, as_relation)
+@bp.get("/u/<int:user_id>")
+def show(user_id):
+	# "View as" is a developer preview, only in debug mode, and only of your own page
+	preview_as = flask.request.args.get("as") if flask.current_app.debug else None
+	profile, error = _load(user_id, preview_as)
 	if error:
 		return error
 	if flask.request.args.get("partial"):
 		return flask.render_template("profile/_body.html", p=profile)
-	return flask.render_template("profile/page.html", p=profile)
+	return flask.render_template(
+		"profile/page.html", p=profile, view_as_enabled=flask.current_app.debug and profile["can_preview"]
+	)
 
 
-@bp.route("/u/<handle>/edit", methods=["GET", "POST"])
-def edit(handle):
-	# Only the owner may edit. The mock decides who the owner is; the real
-	# backend will compare the handle with the signed-in user instead.
-	profile, error = _load(handle)
+@bp.get("/u/<int:user_id>/edit")
+def edit(user_id):
+	profile, error = _load(user_id)
 	if error:
 		return error
 	if profile["viewer_relation"] != "self":
-		return flask.redirect(flask.url_for("profiles.show", handle=handle))
-
-	errors = []
-	if flask.request.method == "POST":
-		action = flask.request.form.get("action", "save")
-		errors = profile_api.save_profile(handle, flask.request.form, action)
-		if not errors:
-			return flask.redirect(flask.url_for("profiles.edit", handle=handle, saved=action))
-		# Show the form again with what they typed
-		profile = {**profile, **_form_values(flask.request.form)}
-
-	return flask.render_template(
-		"profile/edit.html",
-		p=profile,
-		errors=errors,
-		saved=flask.request.args.get("saved"),
-	), (400 if errors else 200)
-
-
-def _form_values(form):
-	year = form.get("year", "")
-	return {
-		"display_name": form.get("display_name", ""),
-		"year": None if year == "hide" else year,
-		"show_year": year != "hide",
-		"avatar_colour": form.get("avatar_colour", ""),
-		"bio": form.get("bio", ""),
-		"contacts": {k: form.get(k, "") for k in ("instagram", "x", "email")},
-	}
+		return _error("forbidden", 403)
+	return flask.render_template("profile/edit.html", p=profile)
 
 
 def init_app(app):

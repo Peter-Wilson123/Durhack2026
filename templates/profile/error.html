@@ -1,4 +1,4 @@
-{# Error state: the profile doesn't exist, or the data couldn't be loaded #}
+{# Error states: profile not found, not allowed, or the database failed #}
 {% extends "base.html" %}
 
 {% block title %}Profile unavailable · Superposition{% endblock %}
@@ -11,7 +11,10 @@
 <div class="profile-page profile-error">
 	{% if kind == "missing" %}
 	<h1>No one here</h1>
-	<p>There's no profile called <strong>@{{ handle }}</strong>. It may have been renamed or deleted.</p>
+	<p>We couldn't find that profile. It may have been deleted.</p>
+	{% elif kind == "forbidden" %}
+	<h1>That's not yours to edit</h1>
+	<p>You can only edit your own profile.</p>
 	{% else %}
 	<h1>Couldn't load this profile</h1>
 	<p>Something went wrong on our side. Please try again in a moment.</p>

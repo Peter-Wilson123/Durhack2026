@@ -1,7 +1,7 @@
-{# ProfilePage: the page at /u/<handle> #}
+{# ProfilePage: the page at /u/<user_id> #}
 {% extends "base.html" %}
 
-{% block title %}{{ p.display_name or ("@" ~ p.handle) }} · Superposition{% endblock %}
+{% block title %}{{ p.display_name }} · Superposition{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">

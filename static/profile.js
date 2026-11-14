@@ -1,16 +1,18 @@
 // Profile page behaviour. Everything here is optional: without JavaScript the
-// page still works (the View-as links just reload the page).
+// page still works (the dev Preview-as links just reload the page).
 
-// ---------- Wave (STUBS: replace with real API calls when the backend has them) ----------
+// ---------- Wave ----------
+// TODO(backend): there are no wave endpoints yet, so these are STUBS that send
+// nothing. Replace each with a POST to the real endpoint once it exists.
 
-// Pretend to send a wave. Should POST to the backend and resolve when stored.
-function sendWave(handle) {
-	return new Promise((resolve) => setTimeout(resolve, 400));
+// Should create a pending connection from you to this user
+function sendWave(userId) {
+	return new Promise((resolve) => setTimeout(resolve, 300));
 }
 
-// Pretend to accept a wave. Should POST to the backend and resolve when stored.
-function acceptWave(handle) {
-	return new Promise((resolve) => setTimeout(resolve, 400));
+// Should mark this user's pending wave to you as accepted
+function acceptWave(userId) {
+	return new Promise((resolve) => setTimeout(resolve, 300));
 }
 
 // Handles clicks on the Wave / Accept wave buttons
@@ -20,18 +22,18 @@ document.addEventListener("click", async (event) => {
 
 	const box = button.closest(".wave");
 	const status = box.querySelector(".wave-status");
-	const handle = box.dataset.handle;
+	const userId = box.dataset.user;
 	button.disabled = true;
 
 	try {
 		if (button.dataset.wave === "send") {
-			await sendWave(handle);
-			button.textContent = "Wave sent";
-			status.textContent = "Wave sent. If they wave back you'll be connected.";
+			await sendWave(userId);
+			button.textContent = "Wave (coming soon)";
+			status.textContent = "Waving isn't connected to the backend yet, so nothing was sent.";
 		} else {
-			await acceptWave(handle);
-			button.textContent = "Connected";
-			status.textContent = "You're connected. Their contact details will appear here.";
+			await acceptWave(userId);
+			button.textContent = "Accept wave (coming soon)";
+			status.textContent = "Accepting waves isn't connected to the backend yet, so nothing changed.";
 		}
 		delete button.dataset.wave;
 	} catch {
