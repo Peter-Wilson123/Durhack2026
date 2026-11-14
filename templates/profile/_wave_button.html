@@ -1,0 +1,12 @@
+{# WaveButton: send a wave, see it's been sent, or accept one. Clicks call stubs in static/profile.js #}
+<div class="wave" data-user="{{ p.id }}">
+	{% if p.wave_status == "sent" %}
+	<button type="button" class="btn btn-primary" disabled>Wave sent</button>
+	{% elif p.wave_status == "received" %}
+	<p class="wave-note">{{ p.display_name }} waved at you.</p>
+	<button type="button" class="btn btn-primary" data-wave="accept">Accept wave</button>
+	{% else %}
+	<button type="button" class="btn btn-primary" data-wave="send">👋 Wave</button>
+	{% endif %}
+	<p class="wave-status" role="status"></p>
+</div>

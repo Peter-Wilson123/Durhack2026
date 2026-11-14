@@ -1,0 +1,60 @@
+{# ContactCard: icon links for connections (and the owner); a locked state for everyone else.
+   For strangers p.contacts is None, so no contact data is ever in the page. #}
+{% from "profile/_badge.html" import only_you %}
+<section class="profile-card card-contact" aria-labelledby="contact-title">
+	<h2 id="contact-title">Contact</h2>
+
+	{% if p.contacts is none %}
+	<div class="contact-locked">
+		<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+			<rect x="4" y="10.5" width="16" height="10.5" rx="2" /><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+		</svg>
+		<p>Wave to connect. Contact details are shared once you both accept.</p>
+	</div>
+	{% include "profile/_wave_button.html" %}
+
+	{% else %}
+	{% set c = p.contacts %}
+	{% if c.instagram or c.x or c.email %}
+	<ul class="contact-links">
+		{% if c.instagram %}
+		<li>
+			<a class="contact-link" href="https://www.instagram.com/{{ c.instagram | urlencode }}/" target="_blank" rel="noopener noreferrer"
+				aria-label="Instagram: @{{ c.instagram }} (opens in a new tab)">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+					<rect x="3.5" y="3.5" width="17" height="17" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" />
+				</svg>
+			</a>
+			<span class="contact-label">Instagram</span>
+		</li>
+		{% endif %}
+		{% if c.x %}
+		<li>
+			<a class="contact-link" href="https://x.com/{{ c.x | urlencode }}" target="_blank" rel="noopener noreferrer"
+				aria-label="X: @{{ c.x }} (opens in a new tab)">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+					<path d="M5 4l14 16M19 4L5 20" />
+				</svg>
+			</a>
+			<span class="contact-label">X</span>
+		</li>
+		{% endif %}
+		{% if c.email %}
+		<li>
+			<a class="contact-link" href="mailto:{{ c.email }}" aria-label="Email {{ c.email }}">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true">
+					<rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 6 8.5 7 8.5-7" />
+				</svg>
+			</a>
+			<span class="contact-label">Email</span>
+		</li>
+		{% endif %}
+	</ul>
+	{% else %}
+	<p class="card-empty">No contact details added yet.</p>
+	{% endif %}
+	{% if p.viewer_relation == "self" %}
+	<p class="card-note">{{ only_you("Only your connections see these") }}</p>
+	{% endif %}
+	{% endif %}
+</section>

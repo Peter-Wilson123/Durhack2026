@@ -1,5 +1,6 @@
 (function () {
-	const GROUP_DEBOUNCE_MS = 300;  // long enough to stop groupings jumping on every key
+	const GROUP_DEBOUNCE_MS = 250;  // long enough to stop groupings jumping on every key
+	const PILLS_PER_GROUP = 8;      // more than this collapse behind "+N more"
 	const TAG_DEBOUNCE_MS = 120;
 	const PALETTE_SIZE = 8;         // --g0 … --g7 in home.css
 	const MAX_TAGS = 10;
@@ -13,6 +14,7 @@
 	const groupsEl = $("groups");
 	const noteText = $("groups-note-text");
 	const createLink = $("groups-create");
+	const retryButton = $("groups-retry");
 	const nameInput = $("interest-name");
 	const panels = home.querySelectorAll(".panel");
 
@@ -143,10 +145,14 @@
 	// The starting selection is fetched once (separately, so searches can't cancel it)
 	async function ensureInitialGroups() {
 		if (!initialGroups) {
+			// TODO(backend): the brief wants a grid of categories with sample interests here,
+			// but there is no categories endpoint, so this shows random related groups instead.
+			setLoading(true);
 			initialRequest ||= fetch("/api/discover").then((r) => (r.ok ? r.json() : null)).catch(() => null);
 			const data = await initialRequest;
 			initialRequest = null;
-			if (!data) return;
+			setLoading(false);
+			if (!data) { showError(() => ensureInitialGroups()); return; }
 			initialGroups = data.groups;
 		}
 		if (!input.value.trim() && home.dataset.state !== "initial") showInitialGroups();
@@ -165,8 +171,12 @@
 			showInitialGroups();
 			return;
 		}
+		setLoading(true);
 		const data = await fetchDiscover(`/api/discover?q=${encodeURIComponent(q)}`);
-		if (!data || input.value.trim() !== q) return;
+		if (data === undefined) return;  // replaced by a newer search, which is still loading
+		setLoading(false);
+		if (input.value.trim() !== q) return;
+		if (data === null) { showError(() => runDiscover(input.value)); return; }
 
 		if (!data.groups.length) {
 			// Nothing related either: offer to create it
@@ -185,7 +195,25 @@
 	}
 	const updateGroups = debounce(runDiscover, GROUP_DEBOUNCE_MS);
 
+	// Dim the current groups while a search runs, without removing them (the grid keeps its size)
+	function setLoading(on) {
+		if (on) groupsEl.setAttribute("aria-busy", "true");
+		else groupsEl.removeAttribute("aria-busy");
+	}
+
+	// Error state: keep whatever is showing and offer a retry
+	let retryAction = null;
+	function showError(retry) {
+		setLoading(false);
+		setNote("Couldn't load interests. Check your connection and try again.", null);
+		retryAction = retry;
+		retryButton.hidden = false;
+		status.textContent = "Couldn't load interests.";
+	}
+	retryButton.addEventListener("click", () => retryAction?.());
+
 	function setNote(text, query) {
+		retryButton.hidden = true;
 		noteText.textContent = text;
 		createLink.hidden = !query;
 		if (query) {
@@ -222,11 +250,28 @@
 	}
 
 	function makeGroup(g) {
-		return el("section", { class: "group", "data-key": g.key, "data-flip": "g" + g.key },
+		const more = el("button", { type: "button", class: "group-more", hidden: true });
+		const node = el("section", { class: "group", "data-key": g.key, "data-flip": "g" + g.key },
 			el("div", { class: "group-head" },
 				el("h3", {}, groupTitle(g)),
 				el("p", { class: "group-cats" })),
-			el("ul", { class: "group-items" }));
+			el("ul", { class: "group-items" }),
+			more);
+		// "+N more" reveals the rest of a long group
+		more.addEventListener("click", () => {
+			node.classList.add("expanded");
+			more.hidden = true;
+			node.querySelector(`.group-items li:nth-child(${PILLS_PER_GROUP + 1}) a`)?.focus();
+		});
+		return node;
+	}
+
+	function updateMore(node, count) {
+		const more = node.querySelector(".group-more");
+		const hiddenCount = count - PILLS_PER_GROUP;
+		more.hidden = hiddenCount <= 0 || node.classList.contains("expanded");
+		more.textContent = `+${hiddenCount} more`;
+		more.setAttribute("aria-label", `Show ${hiddenCount} more interests`);
 	}
 
 	// Keyed update with FLIP animation: kept elements glide to their new
@@ -248,6 +293,7 @@
 			node.style.setProperty("--g", `var(--g${colourOf.get(g.key)})`);
 			node.style.setProperty("--n", g.interests.length);
 			node.querySelector(".group-cats").textContent = g.categories.join(" · ");
+			updateMore(node, g.interests.length);
 			node.setAttribute("aria-label", `${groupTitle(g)}: ${g.interests.length} interests`);
 			const list = node.querySelector(".group-items");
 			list.replaceChildren(...g.interests.map((item) => {

@@ -1,0 +1,29 @@
+{# ProfileHeader: avatar, name, @handle, year, connection count and the owner/connection action #}
+{% from "profile/_avatar.html" import avatar with context %}
+{% from "profile/_badge.html" import only_you %}
+<header class="profile-header">
+	{{ avatar(p.avatar_colour, "lg") }}
+
+	<div class="profile-ident">
+		<h1 class="profile-name">{{ p.display_name }}</h1>
+		{% if p.handle %}<p class="profile-handle">@{{ p.handle }}</p>{% endif %}
+		{% if p.year %}
+		<p class="profile-year">
+			{{ p.year }}
+			{% if not p.show_year %}{{ only_you("Hidden · only you can see this") }}{% endif %}
+		</p>
+		{% endif %}
+	</div>
+
+	<div class="profile-side">
+		<p class="profile-stat">
+			<strong>{{ p.connection_count }}</strong>
+			<span>{{ "Connection" if p.connection_count == 1 else "Connections" }}</span>
+		</p>
+		{% if p.viewer_relation == "self" %}
+		<a class="btn btn-outline-primary btn-sm" href="{{ url_for('profiles.edit', user_id=p.id) }}">Edit profile</a>
+		{% elif p.viewer_relation == "connection" %}
+		<span class="connected-pill">✓ Connected</span>
+		{% endif %}
+	</div>
+</header>

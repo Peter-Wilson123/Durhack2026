@@ -1,0 +1,651 @@
+/* Profile page (/u/<handle>) and its edit page. Colours come from style.css tokens
+   and colours.py (interest pills, avatars). */
+
+.profile-page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+}
+
+.profile-page p {
+    color: inherit; /* undo the global p { color: blue } */
+}
+
+.profile-page :focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* ---------- View as (demo) ---------- */
+.view-as {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem .75rem;
+    margin-bottom: 1.5rem;
+    font-size: .875rem;
+}
+
+.view-as-label {
+    color: var(--muted);
+}
+
+.view-as ul {
+    display: inline-flex;
+    margin: 0;
+    padding: 3px;
+    list-style: none;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+}
+
+.view-as a {
+    display: block;
+    padding: .3rem .85rem;
+    border-radius: 999px;
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.view-as a:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.view-as a[aria-current] {
+    background: var(--accent);
+    color: #fff;
+}
+
+.view-as-demo {
+    padding: .1rem .5rem;
+    border: 1px dashed var(--line);
+    border-radius: .375rem;
+    color: var(--muted);
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+#profile-view {
+    transition: opacity .15s;
+}
+
+#profile-view[aria-busy="true"] {
+    opacity: .45;
+    pointer-events: none;
+}
+
+.profile-load-error {
+    margin-top: 1rem;
+    color: #9B1C1C !important;
+}
+
+/* ---------- Avatar ---------- */
+.avatar {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--avatar, var(--accent));
+    color: #fff;
+}
+
+.avatar svg {
+    width: 62%;
+    height: 62%;
+}
+
+.avatar-lg {
+    width: 112px;
+    height: 112px;
+}
+
+.avatar-md {
+    width: 64px;
+    height: 64px;
+}
+
+/* ---------- Header ---------- */
+.profile-header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.profile-name {
+    margin: 0;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 700;
+    letter-spacing: -.02em;
+    overflow-wrap: anywhere;
+}
+
+.profile-handle {
+    margin: .1rem 0 0;
+    color: var(--muted) !important;
+}
+
+.profile-year {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    margin: .35rem 0 0;
+    font-weight: 500;
+}
+
+.profile-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: .75rem;
+}
+
+.profile-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    line-height: 1.1;
+}
+
+.profile-stat strong {
+    font-size: 1.75rem;
+}
+
+.profile-stat span {
+    color: var(--muted);
+    font-size: .875rem;
+}
+
+.connected-pill {
+    padding: .2rem .7rem;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: .875rem;
+    font-weight: 600;
+}
+
+.only-you {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .1rem .55rem;
+    border-radius: 999px;
+    background: #FFF4D6;
+    color: #6B4A00;
+    font-size: .75rem;
+    font-weight: 600;
+}
+
+/* ---------- Cards ---------- */
+/* Desktop: Interests on the left; Contact above About on the right.
+   Mobile: one column, in page order (Interests, About, Contact). */
+.profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+        "interests contact"
+        "interests about";
+    grid-template-rows: auto 1fr;
+    gap: 1.25rem;
+}
+
+.card-interests { grid-area: interests; }
+.card-contact { grid-area: contact; }
+.card-about { grid-area: about; }
+
+.profile-card {
+    padding: 1.25rem 1.4rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+}
+
+.profile-card h2 {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+.card-empty {
+    margin: 0;
+    color: var(--muted) !important;
+}
+
+.card-note {
+    margin: 1rem 0 0;
+}
+
+.bio-text {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.55;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+/* Interest pills */
+.interest-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.interest-pill {
+    display: inline-flex;
+    align-items: baseline;
+    gap: .45rem;
+    padding: .4rem .85rem;
+    border-radius: 999px;
+    background: var(--pill-bg);
+    color: var(--pill-fg);
+    font-weight: 600;
+    font-size: .9rem;
+    text-decoration: none;
+}
+
+.interest-pill:hover {
+    box-shadow: inset 0 0 0 2px var(--pill-fg);
+    color: var(--pill-fg);
+}
+
+/* Category name inside the pill, so colour is never the only signal */
+.pill-cat {
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    opacity: .85;
+}
+
+/* Contact */
+.contact-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.contact-links li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .35rem;
+}
+
+.contact-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border: 1px solid var(--line);
+    border-radius: .9rem;
+    color: var(--ink);
+    transition: background-color .15s, color .15s, border-color .15s;
+}
+
+.contact-link svg {
+    width: 26px;
+    height: 26px;
+}
+
+.contact-link:hover,
+.contact-link:focus-visible {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.contact-label {
+    color: var(--muted);
+    font-size: .8rem;
+}
+
+.contact-locked {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    margin-bottom: 1rem;
+    color: var(--muted);
+}
+
+.contact-locked svg {
+    flex: none;
+}
+
+.contact-locked p {
+    margin: 0;
+    color: var(--ink) !important;
+}
+
+.wave-note {
+    margin: 0 0 .5rem;
+    font-weight: 600;
+}
+
+.wave-status {
+    margin: .5rem 0 0;
+    color: var(--muted) !important;
+    font-size: .875rem;
+}
+
+.wave-status:empty {
+    display: none;
+}
+
+/* ---------- Error and demo index ---------- */
+.profile-error {
+    max-width: 560px;
+    text-align: center;
+    padding-top: 4rem;
+}
+
+.demo-list {
+    padding: 0;
+    list-style: none;
+}
+
+.demo-list li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem 1rem;
+    padding: .75rem 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.demo-list a {
+    min-width: 11rem;
+    font-weight: 600;
+}
+
+.demo-list span {
+    color: var(--muted);
+}
+
+/* ---------- Edit page ---------- */
+.back-link {
+    display: inline-block;
+    margin-bottom: 1rem;
+    text-decoration: none;
+}
+
+.edit-title {
+    margin-bottom: 1.5rem;
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.edit-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 2rem;
+    align-items: start;
+}
+
+.edit-form fieldset {
+    margin-bottom: 1.5rem;
+    padding: 1.25rem 1.4rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+}
+
+.edit-form legend {
+    float: none;
+    width: auto;
+    margin-bottom: .75rem;
+    padding: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.optional {
+    margin-left: .25rem;
+    color: var(--muted);
+    font-size: .8rem;
+    font-weight: 400;
+}
+
+.edit-form .form-control[readonly] {
+    background: var(--page);
+    color: var(--muted);
+}
+
+/* Avatar colour swatches: native radios, so arrow keys move between them */
+.swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+}
+
+.swatch {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--swatch);
+    cursor: pointer;
+}
+
+.swatch input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.swatch:has(input:checked) {
+    box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--ink);
+}
+
+.swatch:has(input:checked)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #fff;
+}
+
+.swatch:has(input:focus-visible) {
+    outline: 3px solid var(--accent);
+    outline-offset: 6px;
+}
+
+/* Bio */
+.bio-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: .4rem;
+    font-size: .85rem;
+}
+
+.bio-meta p {
+    margin: 0;
+}
+
+.bio-visibility {
+    color: var(--muted) !important;
+}
+
+.bio-count {
+    flex: none;
+    color: var(--muted) !important;
+    font-variant-numeric: tabular-nums;
+}
+
+.bio-warning {
+    margin: .6rem 0 0;
+    padding: .5rem .75rem;
+    border-left: 3px solid #B7791F;
+    border-radius: .25rem;
+    background: #FFF8E6;
+    color: #6B4A00 !important;
+    font-size: .875rem;
+}
+
+.bio-status {
+    margin: .75rem 0 .5rem;
+    font-size: .875rem;
+    font-weight: 600;
+}
+
+.bio-status[data-state="published"] {
+    color: #1E6B3C !important;
+}
+
+.bio-status[data-state="draft"] {
+    color: #6B4A00 !important;
+}
+
+.bio-actions {
+    display: flex;
+    gap: .5rem;
+}
+
+.edit-actions {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+/* Preview */
+.preview {
+    position: sticky;
+    top: 5rem;
+}
+
+.preview h2 {
+    margin-bottom: .75rem;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.preview-card {
+    padding: 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+}
+
+.preview-head {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.preview-head p {
+    margin: 0;
+}
+
+.preview-name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.preview-handle {
+    color: var(--muted) !important;
+    font-size: .875rem;
+}
+
+.preview-year {
+    font-size: .875rem;
+    font-weight: 500;
+}
+
+.preview-bio {
+    margin: 1rem 0 0;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.preview-bio[data-state="hidden"] {
+    color: var(--muted) !important;
+    font-style: italic;
+}
+
+.preview-bio[data-state="draft"] {
+    padding: .6rem .75rem;
+    border: 1px dashed #D9B45A;
+    border-radius: .5rem;
+    color: var(--muted) !important;
+}
+
+.preview-bio[data-state="draft"]::before {
+    content: "Not visible until you publish:";
+    display: block;
+    margin-bottom: .25rem;
+    color: #6B4A00;
+    font-size: .75rem;
+    font-weight: 600;
+    font-style: normal;
+}
+
+.preview-note {
+    margin-top: .75rem;
+    color: var(--muted) !important;
+    font-size: .8rem;
+}
+
+/* ---------- Small screens ---------- */
+@media (max-width: 767.98px) {
+    .profile-header {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+        gap: 1rem;
+    }
+
+    .profile-year {
+        justify-content: center;
+    }
+
+    .profile-side {
+        flex-direction: row;
+        align-items: center;
+        gap: 1.25rem;
+    }
+
+    .profile-grid {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "interests"
+            "about"
+            "contact";
+        grid-template-rows: none;
+    }
+
+    .edit-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .preview {
+        position: static;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #profile-view,
+    .contact-link {
+        transition: none;
+    }
+}

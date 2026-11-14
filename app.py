@@ -3,6 +3,7 @@ import flask_login
 import auth
 import discovery
 import interests
+import profiles
 import search
 import find_new_interest
 import user_account
@@ -44,6 +45,9 @@ with app.app_context():
 
 # Interest discovery, tags and interest pages (see interests.py)
 interests.init_app(app)
+
+# Profile pages at /u/<handle> (see profiles.py; mock data in profile_api.py)
+profiles.init_app(app)
 
 
 @app.get("/account")
@@ -161,15 +165,18 @@ def update_account():
     )
     return flask.redirect(flask.url_for("account"))
 
+
 @app.get("/find-new-interest")
 @flask_login.login_required
 def discover_new_interest():
     recommended = find_new_interest.find_new_interest(flask_login.current_user)
     if recommended:
         return flask.redirect(
-            flask.url_for("interests.view_interest", interest_id=recommended.interest_id)
+            flask.url_for("interests.view_interest",
+                          interest_id=recommended.interest_id)
         )
     return flask.redirect(flask.url_for("account"))
+
 
 @app.route("/")
 def home():
