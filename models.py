@@ -21,11 +21,19 @@ class User(UserMixin, db.Model):
 	display_name = db.Column(db.String(100), nullable=True)
 	email = db.Column(db.String(120), unique=True, nullable=False)
 	password_hash = db.Column(db.String(256), nullable=False)
+	year = db.Column(db.String(30), nullable=True)
+	show_year = db.Column(db.Boolean, default=False, nullable=False)
+	avatar_colour = db.Column(db.String(30), default="palatinate", nullable=False)
 	bio = db.Column(db.Text, default="")
+	bio_published = db.Column(db.Boolean, default=False, nullable=False)
 	avatar_url = db.Column(db.String(255), default="")
 
-	created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
+    # Connection-only contact details
+	contact_instagram = db.Column(db.String(60), default="")
+	contact_x = db.Column(db.String(60), default="")
+	contact_email = db.Column(db.String(120), default="")
 
+	created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
 	# Relationships
 	user_interests = db.relationship(
 		"UserInterest", back_populates="user", cascade="all, delete-orphan"
