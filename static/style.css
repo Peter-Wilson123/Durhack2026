@@ -1,27 +1,42 @@
-p {
-    color:blue;
-}
+/* ---------- Design tokens: dark theme, every page ----------
+   Bootstrap's own dark theme is switched on in base.html (data-bs-theme="dark");
+   these tokens are the site's colours on top of it. Contrast (WCAG AA, 4.5:1):
+   ink on page 15.9, muted on surface 7.2, accent-text on surface 8.2,
+   white on accent 8.0. */
+:root,
+[data-bs-theme="dark"] {
+    color-scheme: dark;
 
-/* ---------- Design tokens ---------- */
-:root {
-    --accent: #7E317B;          /* Durham palatinate */
-    --accent-hover: #68246D;
-    --accent-soft: #F3E9F2;
+    --accent: #7E317B;          /* Durham palatinate: fills (buttons, dots), white text on it */
+    --accent-hover: #93408F;
+    --accent-text: #D7A2D3;     /* palatinate lightened for text, links, borders and focus */
+    --accent-soft: #33213A;     /* hover backgrounds */
 
-    --cat-physical: #2F6FDB;
-    --cat-academic: #C8961E;
-    --cat-electronic: #2E9E5B;
+    --ink: #EDEAF0;
+    --muted: #ABA5B1;
+    --line: #34303A;
+    --surface: #1C1A21;
+    --surface-2: #25222B;
+    --page: #121016;
 
-    --ink: #1D1A20;
-    --muted: #6B6570;
-    --line: #E4DFE6;
-    --surface: #FFFFFF;
-    --page: #FAF8FB;
+    --danger-text: #FF9B8F;
+    --ok-text: #7FD6A4;
+    --notice-bg: #3A2E12;
+    --notice-text: #F5D27A;
 
-    --bs-primary: var(--accent);
+    --bs-body-bg: var(--page);
+    --bs-body-color: var(--ink);
+    --bs-secondary-color: var(--muted);
+    --bs-border-color: var(--line);
+    --bs-tertiary-bg: var(--surface-2);
+    --bs-primary: var(--accent-text);
     --bs-primary-rgb: 126, 49, 123;
-    --bs-link-color: var(--accent);
-    --bs-link-hover-color: var(--accent-hover);
+    --bs-link-color: var(--accent-text);
+    --bs-link-color-rgb: 215, 162, 211;
+    --bs-link-hover-color: #EBC6E8;
+    --bs-link-hover-color-rgb: 235, 198, 232;
+    --bs-card-bg: var(--surface);
+    --bs-offcanvas-bg: var(--surface);
 }
 
 body {
@@ -29,18 +44,73 @@ body {
     color: var(--ink);
 }
 
+.card {
+    --bs-card-bg: var(--surface);
+    --bs-card-border-color: var(--line);
+}
+
+.form-control,
+.form-select,
+.input-group-text {
+    border-color: var(--line);
+}
+
+.form-control,
+.form-select {
+    background-color: var(--surface-2);
+    color: var(--ink);
+}
+
+.form-control::placeholder {
+    color: var(--muted);
+    opacity: 1;
+}
+
 .btn-primary {
     --bs-btn-bg: var(--accent);
     --bs-btn-border-color: var(--accent);
+    --bs-btn-color: #fff;
     --bs-btn-hover-bg: var(--accent-hover);
     --bs-btn-hover-border-color: var(--accent-hover);
+    --bs-btn-hover-color: #fff;
     --bs-btn-active-bg: var(--accent-hover);
     --bs-btn-active-border-color: var(--accent-hover);
+    --bs-btn-disabled-bg: var(--accent);
+    --bs-btn-disabled-border-color: var(--accent);
 }
 
-.form-control:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 .2rem rgba(126, 49, 123, .2);
+.btn-outline-primary {
+    --bs-btn-color: var(--accent-text);
+    --bs-btn-border-color: var(--accent-text);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--accent);
+    --bs-btn-hover-border-color: var(--accent);
+    --bs-btn-active-bg: var(--accent);
+    --bs-btn-active-border-color: var(--accent);
+    --bs-btn-disabled-color: var(--accent-text);
+    --bs-btn-disabled-border-color: var(--accent-text);
+}
+
+.btn-link {
+    --bs-btn-color: var(--accent-text);
+    --bs-btn-hover-color: #EBC6E8;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--accent-text);
+    background-color: var(--surface-2);
+    color: var(--ink);
+    box-shadow: 0 0 0 .2rem rgba(215, 162, 211, .25);
+}
+
+.form-check-input:checked {
+    background-color: var(--accent);
+    border-color: var(--accent-text);
+}
+
+:focus-visible {
+    outline-color: var(--accent-text);
 }
 
 /* ---------- Header ---------- */
@@ -49,10 +119,11 @@ body {
     top: 0;
     z-index: 1020;
     display: grid;
-    grid-template-columns: 48px 1fr 48px;
+    grid-template-columns: auto 1fr auto;
+    gap: .25rem;
     align-items: center;
     padding: .5rem 1rem;
-    background: rgba(250, 248, 251, .9);
+    background: rgba(18, 16, 22, .9);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--line);
 }
@@ -72,15 +143,18 @@ body {
 .icon-btn:hover,
 .icon-btn:focus-visible {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
 }
 
 .site-header .icon-btn:last-child {
     justify-self: end;
 }
 
+/* Wordmark: "Superposition", top-left, linking home. Never wraps. */
 .brand {
-    justify-self: center;
+    justify-self: start;
+    min-width: 0;
+    white-space: nowrap;
     display: inline-flex;
     align-items: center;
     gap: .5rem;
@@ -95,8 +169,8 @@ body {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: var(--accent);
-    box-shadow: inset 0 0 0 5px var(--accent-soft);
+    background: var(--accent-text);
+    box-shadow: inset 0 0 0 5px var(--accent);
 }
 
 .site-menu-links {
@@ -115,18 +189,48 @@ body {
 
 .site-menu-links a:hover {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
 }
 
-/* ---------- Footer ---------- */
+@media (max-width: 639.98px) {
+    .brand {
+        font-size: 1.1rem;
+    }
+
+    .auth-link span {
+        display: none;  /* icon only on phones; its aria-label still names it */
+    }
+}
+
+/* ---------- Footer ----------
+   In normal document flow: straight after the content on every page, never
+   fixed or sticky, so it can't cover content or the edit-mode bar. */
 .site-footer {
-    padding: 2rem 1rem;
-    text-align: center;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: .25rem 1.5rem;
+    margin-top: 2rem;
+    padding: 1.5rem 1rem;
     border-top: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: .875rem;
 }
 
 .site-footer p {
     margin: 0;
     color: var(--muted);
-    font-size: .875rem;
+}
+
+.site-footer-name {
+    font-weight: 600;
+}
+
+@media (max-width: 639.98px) {
+    .site-footer {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
 }

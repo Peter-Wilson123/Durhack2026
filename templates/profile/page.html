@@ -2,7 +2,7 @@
    into edit mode in place ("Edit profile"), with a sticky Cancel / Done bar. #}
 {% extends "base.html" %}
 
-{% block title %}{{ p.display_name }} · Superposition{% endblock %}
+{% block title %}{{ p.display_name }}{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">

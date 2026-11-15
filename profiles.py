@@ -160,3 +160,6 @@ def init_app(app):
 	# Account settings live in settings.py; registered here so app.py doesn't need changing
 	import settings
 	settings.init_app(app)
+	# Site-wide 404/500 pages in the shared layout (site_pages.py)
+	import site_pages
+	site_pages.init_app(app)

@@ -12,7 +12,7 @@
 }
 
 .interest-page :focus-visible {
-    outline: 3px solid var(--accent);
+    outline: 3px solid var(--accent-text);
     outline-offset: 2px;
 }
 
@@ -52,7 +52,7 @@
 
 .interest-toggle[aria-pressed="true"] {
     background: var(--cat-fg);
-    color: #fff;
+    color: var(--page);  /* dark text on the light category tint (contrast 10.8:1 or more) */
 }
 
 .interest-toggle:hover,
@@ -64,7 +64,7 @@
 .interest-toggle[aria-pressed="true"]:hover,
 .interest-toggle[aria-pressed="true"]:focus-visible {
     background: var(--cat-fg);
-    color: #fff;
+    color: var(--page);  /* dark text on the light category tint (contrast 10.8:1 or more) */
     box-shadow: 0 0 0 3px var(--cat-bg);
 }
 
@@ -141,8 +141,8 @@
 }
 
 .interest-tags a:hover {
-    border-color: var(--accent);
-    color: var(--accent);
+    border-color: var(--accent-text);
+    color: var(--accent-text);
 }
 
 /* ---------- Sections ---------- */
@@ -197,8 +197,8 @@
 
 .user-card:hover,
 .user-card:focus-within {
-    border-color: var(--accent);
-    box-shadow: 0 4px 14px rgba(29, 26, 32, .08);
+    border-color: var(--accent-text);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
 }
 
 .user-card-text p,
@@ -230,7 +230,7 @@
 }
 
 .user-card-name a:focus-visible::after {
-    outline: 3px solid var(--accent);
+    outline: 3px solid var(--accent-text);
     outline-offset: 2px;
 }
 

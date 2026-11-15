@@ -141,11 +141,24 @@ def seed_taxonomy() -> None:
 
 
 def check_schema() -> None:
-	"""Stop with a clear message if app.db predates the tags system."""
-	columns = {c["name"] for c in inspect(db.engine).get_columns("interests")}
-	if "category_id" in columns:
+	"""
+	Stop with a clear message if app.db is older than models.py. db.create_all()
+	makes missing tables but never adds columns to existing ones, so an old file
+	otherwise gives a 500 "Internal Server Error" on every page that loads a user.
+	"""
+	inspector = inspect(db.engine)
+	interest_columns = {c["name"] for c in inspector.get_columns("interests")}
+	missing = []
+	for table in db.metadata.sorted_tables:
+		if not inspector.has_table(table.name):
+			continue  # create_all() makes it
+		have = {c["name"] for c in inspector.get_columns(table.name)}
+		missing += [f"{table.name}.{c.name}" for c in table.columns if c.name not in have]
+
+	if "category_id" in interest_columns or missing:
+		detail = f" (missing: {', '.join(missing)})" if missing else ""
 		raise SystemExit(
-			"\nYour local database (instance/app.db) is from before interests used tags.\n"
+			f"\nYour local database (instance/app.db) is older than models.py{detail}.\n"
 			"Delete instance/app.db and start the app again; it will be rebuilt and seeded.\n"
 		)
 
