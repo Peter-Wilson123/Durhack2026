@@ -7,8 +7,7 @@ Register with `interests.init_app(app)` after the database is set up.
 import flask
 import flask_login
 from sqlalchemy import func, inspect, select
-from sqlalchemy.exc import SQLAlchemyError
-
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 import colours
 import discovery
 import home_api
@@ -167,9 +166,12 @@ def check_schema() -> None:
 
 
 def init_app(app: flask.Flask) -> None:
-	app.register_blueprint(bp)
-	with app.app_context():
-		db.create_all()
-		check_schema()
-		if db.session.scalar(select(Tag.tag_id).limit(1)) is None:
-			seed_taxonomy()
+    app.register_blueprint(bp)
+    with app.app_context():
+        db.create_all()
+        check_schema()
+        if db.session.scalar(select(Tag.tag_id).limit(1)) is None:
+            try:
+                seed_taxonomy()
+            except IntegrityError:
+                db.session.rollback()
