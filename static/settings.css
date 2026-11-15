@@ -79,7 +79,7 @@
 }
 
 .danger-zone {
-    border-color: color-mix(in srgb, var(--danger-text) 40%, transparent);
+    border-color: var(--danger-border);
 }
 
 .danger-zone h2 {
