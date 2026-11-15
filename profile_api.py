@@ -90,21 +90,29 @@ def get_profile(user_id, viewer, preview_as=None):
 
 
 def to_profile(user):
-	"""Map a backend User row to the profile shape (fields everyone may see first)."""
-	return {
-		"id": user.user_id,
-		"handle": None,  # TODO(backend): no public handle; never use user.username (CIS code)
-		"display_name": (user.display_name or "").strip() or FALLBACK_NAME,
-		"has_display_name": bool((user.display_name or "").strip()),
-		"year": None,  # TODO(backend): no year column
-		"show_year": False,
-		"avatar_colour": fallback_avatar(user.user_id),  # TODO(backend): no avatar colour column
-		"interests": [_interest(ui.interest) for ui in user.user_interests],
-		"bio": user.bio or "",
-		"bio_published": True,  # TODO(backend): no draft/published column
-		"connection_count": _connection_count(user.user_id),
-		"contacts": {},  # TODO(backend): no contact columns (users.email is the login email, not a contact)
-	}
+    """Map a backend User row to the profile shape (fields everyone may see first)."""
+    contacts = {}
+    if user.contact_instagram:
+        contacts["instagram"] = user.contact_instagram
+    if user.contact_x:
+        contacts["x"] = user.contact_x
+    if user.contact_email:
+        contacts["email"] = user.contact_email
+
+    return {
+        "id": user.user_id,
+        "handle": None,  # TODO(backend): no public handle; never use user.username (CIS code)
+        "display_name": (user.display_name or "").strip() or FALLBACK_NAME,
+        "has_display_name": bool((user.display_name or "").strip()),
+        "year": user.year or None,
+        "show_year": bool(user.show_year and user.year),
+        "avatar_colour": user.avatar_colour or fallback_avatar(user.user_id),
+        "interests": [_interest(ui.interest) for ui in user.user_interests],
+        "bio": user.bio or "",
+        "bio_published": bool(user.bio_published),
+        "connection_count": _connection_count(user.user_id),
+        "contacts": contacts,
+    }
 
 
 def _interest(interest):

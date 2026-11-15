@@ -21,8 +21,10 @@
 	</div>
 
 	<div class="edit-layout">
-		<form class="edit-form" id="edit-form" onsubmit="return false"
-			data-published-bio="{{ p.bio if p.bio_published else '' }}" data-bio-published="{{ 'true' if p.bio_published else 'false' }}">
+		<form class="edit-form" id="edit-form" method="post"
+      action="{{ url_for('profiles.edit_post', user_id=p.id) }}"
+      data-published-bio="{{ p.bio if p.bio_published else '' }}"
+      data-bio-published="{{ 'true' if p.bio_published else 'false' }}">
 
 			<fieldset>
 				<legend>Basics</legend>
@@ -73,8 +75,8 @@
 					</p>
 					<p class="bio-status" id="bio-status" data-state="{{ 'published' if p.bio_published else 'draft' }}"></p>
 					<div class="bio-actions">
-						<button class="btn btn-outline-secondary btn-sm" type="button" id="bio-unpublish" disabled>Unpublish</button>
-						<button class="btn btn-outline-primary btn-sm" type="button" id="bio-publish" disabled>Publish bio</button>
+  						<button class="btn btn-outline-secondary btn-sm" type="submit" name="action" value="unpublish" id="bio-unpublish">Unpublish</button>
+						<button class="btn btn-outline-primary btn-sm" type="submit" name="action" value="publish" id="bio-publish">Publish bio</button>
 					</div>
 				</div>
 			</fieldset>
@@ -102,8 +104,8 @@
 			</fieldset>
 
 			<div class="edit-actions">
-				<button class="btn btn-primary" type="button" disabled aria-describedby="save-unavailable">Save changes</button>
-				<a class="btn btn-link" href="{{ url_for('profiles.show', user_id=p.id) }}">Cancel</a>
+  				<button class="btn btn-primary" type="submit" name="action" value="save">Save changes</button>
+  				<a class="btn btn-link" href="{{ url_for('profiles.show', user_id=p.id) }}">Cancel</a>
 			</div>
 			<p class="form-text" id="save-unavailable">Saving and publishing are switched off until the backend can store them.
 				When they work, saving will never publish your bio: only “Publish bio” will.</p>

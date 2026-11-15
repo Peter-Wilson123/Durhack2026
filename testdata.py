@@ -28,7 +28,14 @@ def seed_database():
             username="alex",
             display_name="Alex Mercer",
             email="alex@uni.ac.uk",
+            year="Fresher",
+            show_year=True,
+            avatar_colour="blue",
             bio="First-year CS student trying to find people who like weird hobbies.",
+            bio_published=True,
+            contact_instagram="alex.mercer.durham",
+            contact_x="alexmercer_cs",
+            contact_email="alex.mercer@durham.ac.uk",
         )
         alex.set_password("password123")
 
@@ -36,7 +43,13 @@ def seed_database():
             username="maya",
             display_name="Maya Lin",
             email="maya@uni.ac.uk",
+            year="2nd year",
+            show_year=True,
+            avatar_colour="green",
             bio="Botany nerd, darkroom tinkerer, and second-hand bookshop regular.",
+            bio_published=True,
+            contact_instagram="mayalin.botany",
+            contact_email="maya.lin@durham.ac.uk",
         )
         maya.set_password("password123")
 
@@ -44,7 +57,13 @@ def seed_database():
             username="liam",
             display_name="Liam O'Connor",
             email="liam@uni.ac.uk",
+            year="3rd year",
+            show_year=True,
+            avatar_colour="teal",
             bio="Weekend trail runner and analog printmaker.",
+            bio_published=True,
+            contact_instagram="liam.prints",
+            contact_x="liamoconnor_run",
         )
         liam.set_password("password123")
 
@@ -52,7 +71,14 @@ def seed_database():
             username="priya",
             display_name="Priya Nair",
             email="priya@uni.ac.uk",
+            year="Postgrad",
+            show_year=False,
+            avatar_colour="rose",
             bio="Collecting obscure translated novellas and mechanical keyboards.",
+            bio_published=True,
+            contact_instagram="priya.reads",
+            contact_x="priyanair_keys",
+            contact_email="priya.nair@durham.ac.uk",
         )
         priya.set_password("password123")
 
@@ -60,7 +86,13 @@ def seed_database():
             username="sam",
             display_name="Samira Vance",
             email="sam@uni.ac.uk",
+            year="4th+",
+            show_year=True,
+            avatar_colour="rust",
             bio="Horology enthusiast and student radio host.",
+            bio_published=False,
+            contact_x="samiravance_fm",
+            contact_email="samira.vance@durham.ac.uk",
         )
         sam.set_password("password123")
 
