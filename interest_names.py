@@ -27,7 +27,12 @@ def _is_all_caps(word):
 
 
 def _capitalise_part(part):
-	"""First letter uppercase, other letters lowercase; digits and symbols kept."""
+	"""
+	First letter uppercase, other letters lowercase; symbols kept. A part that
+	starts with a digit is kept as typed ("1970s", "3d", "3D").
+	"""
+	if part[:1].isdigit():
+		return part
 	out, done = [], False
 	for ch in part:
 		if ch.isalpha():
