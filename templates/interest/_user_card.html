@@ -8,10 +8,13 @@
 		{% if person.handle %}<p class="user-card-handle">@{{ person.handle }}</p>{% endif %}
 		{% if person.year %}<p class="user-card-year">{{ person.year }}</p>{% endif %}
 	</div>
+	
 
 	{% if person.wave_state == "connected" %}
-	<span class="connected-pill">✓ Connected</span>
-	{% else %}
+        <span class="connected-pill">Connected</span>
+    {% elif person.wave_state == "self" %}
+        <span class="connected-pill">You</span>
+    {% else %}
 	{# Same markup as the profile page's Wave button, so static/profile.js handles both #}
 	<div class="wave" data-user="{{ person.id }}">
 		{% if person.wave_state == "sent" %}

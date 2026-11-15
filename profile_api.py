@@ -201,3 +201,130 @@ def get_suggestions_for(user_id, exclude_ids=()):
 	if user is None:
 		raise ProfileNotFound(user_id)
 	return get_suggestions(user, exclude_ids)
+
+
+
+
+
+# functions used for having added connections come up in friends
+
+def _wave_states_for(viewer_id, user_ids):
+    """Map {other_user_id: 'self' | 'connected' | 'sent' | 'received'} relative to viewer."""
+    states = {}
+    others = [uid for uid in user_ids if uid != viewer_id]
+    if viewer_id in user_ids:
+        states[viewer_id] = "self"
+    if not others:
+        return states
+
+    rows = db.session.scalars(
+        select(Connection).where(
+            or_(
+                (Connection.requester_id == viewer_id) & Connection.addressee_id.in_(others),
+                (Connection.addressee_id == viewer_id) & Connection.requester_id.in_(others),
+            )
+        )
+    )
+    for row in rows:
+        other = row.addressee_id if row.requester_id == viewer_id else row.requester_id
+        if row.status == "accepted":
+            states[other] = "connected"
+        elif row.status == "pending":
+            states[other] = "sent" if row.requester_id == viewer_id else "received"
+    return states
+
+
+def _to_connection_card(user, wave_state):
+    """Public user card shape matching templates/interest/_user_card.html."""
+    return {
+        "id": user.user_id,
+        "url": f"/u/{user.user_id}",
+        "handle": None,  # Never expose user.username (CIS code)
+        "display_name": (user.display_name or "").strip() or FALLBACK_NAME,
+        "avatar_colour": user.avatar_colour or fallback_avatar(user.user_id),
+        "year": user.year if (user.show_year and user.year) else None,
+        "wave_state": wave_state,
+    }
+
+
+def get_connections(user_id, viewer):
+    """
+    Return accepted connections for `user_id` as seen by `viewer`.
+    When `viewer` is `user_id`, also includes incoming and outgoing pending waves.
+    """
+    target = db.session.get(User, user_id)
+    if target is None:
+        raise ProfileNotFound(user_id)
+
+    is_self = viewer.user_id == target.user_id
+
+    accepted_rows = db.session.scalars(
+        select(Connection)
+        .where(
+            Connection.status == "accepted",
+            or_(Connection.requester_id == user_id, Connection.addressee_id == user_id),
+        )
+        .order_by(Connection.updated_at.desc())
+    ).all()
+
+    connected_ids = [
+        row.addressee_id if row.requester_id == user_id else row.requester_id
+        for row in accepted_rows
+    ]
+
+    incoming_ids = []
+    outgoing_ids = []
+    if is_self:
+        pending_rows = db.session.scalars(
+            select(Connection)
+            .where(
+                Connection.status == "pending",
+                or_(Connection.requester_id == user_id, Connection.addressee_id == user_id),
+            )
+            .order_by(Connection.created_at.desc())
+        ).all()
+        for row in pending_rows:
+            if row.addressee_id == user_id:
+                incoming_ids.append(row.requester_id)
+            else:
+                outgoing_ids.append(row.addressee_id)
+
+    all_ids = list(dict.fromkeys(connected_ids + incoming_ids + outgoing_ids))
+    users_by_id = (
+        {
+            u.user_id: u
+            for u in db.session.scalars(select(User).where(User.user_id.in_(all_ids)))
+        }
+        if all_ids
+        else {}
+    )
+    waves = _wave_states_for(viewer.user_id, all_ids)
+
+    connections = [
+        _to_connection_card(users_by_id[uid], waves.get(uid, "none"))
+        for uid in connected_ids
+        if uid in users_by_id
+    ]
+    incoming_waves = [
+        _to_connection_card(users_by_id[uid], "received")
+        for uid in incoming_ids
+        if uid in users_by_id
+    ]
+    outgoing_waves = [
+        _to_connection_card(users_by_id[uid], "sent")
+        for uid in outgoing_ids
+        if uid in users_by_id
+    ]
+
+    return {
+        "user": {
+            "id": target.user_id,
+            "display_name": (target.display_name or "").strip() or FALLBACK_NAME,
+            "avatar_colour": target.avatar_colour or fallback_avatar(target.user_id),
+        },
+        "is_self": is_self,
+        "connections": connections,
+        "connection_count": len(connections),
+        "incoming_waves": incoming_waves,
+        "outgoing_waves": outgoing_waves,
+    }

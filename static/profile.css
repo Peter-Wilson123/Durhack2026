@@ -145,14 +145,45 @@
     align-items: flex-end;
     gap: .75rem;
 }
-
-.profile-stat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 0;
-    line-height: 1.1;
+a.profile-stat {
+    color: var(--ink);
+    text-decoration: none;
+    padding: .35rem .65rem;
+    border-radius: .75rem;
+    transition: background-color .15s, color .15s;
 }
+
+a.profile-stat:hover,
+a.profile-stat:focus-visible {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+a.profile-stat:hover span,
+a.profile-stat:focus-visible span {
+    color: var(--accent);
+}
+
+.connections-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1rem 0 1.75rem;
+}
+
+.connections-title {
+    margin: 0;
+    font-size: clamp(1.5rem, 3.5vw, 2.1rem);
+    font-weight: 700;
+    letter-spacing: -.02em;
+}
+
+.connections-subtitle {
+    margin: .15rem 0 0;
+    color: var(--muted) !important;
+    font-size: .95rem;
+}
+
 
 .profile-stat strong {
     font-size: 1.75rem;

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "profile/_avatar.html" import avatar with context %}
+
+{% block title %}
+    {% if c.is_self %}Your connections{% else %}{{ c.user.display_name }}'s connections{% endif %} · Superposition
+{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='interest.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+    <a class="back-link" href="{{ url_for('profiles.show', user_id=c.user.id) }}">
+        &larr; {{ "Back to your profile" if c.is_self else "Back to " ~ c.user.display_name ~ "'s profile" }}
+    </a>
+
+    <header class="connections-header">
+        {{ avatar(c.user.avatar_colour, "md") }}
+        <div>
+            <h1 class="connections-title">
+                {{ "Your connections" if c.is_self else c.user.display_name ~ "'s connections" }}
+            </h1>
+            <p class="connections-subtitle">
+                {{ c.connection_count }} {{ "connection" if c.connection_count == 1 else "connections" }}
+            </p>
+        </div>
+    </header>
+
+    {% if c.is_self and c.incoming_waves %}
+        <section class="interest-people" aria-labelledby="incoming-waves-title">
+            <h2 id="incoming-waves-title">Waves received ({{ c.incoming_waves | length }})</h2>
+            <div class="people-grid">
+                {% for person in c.incoming_waves %}
+                    {% include "interest/_user_card.html" %}
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    <section class="interest-people" aria-labelledby="connections-list-title">
+        <h2 id="connections-list-title">
+            {{ "Connected students" if c.is_self else "Connections" }}
+        </h2>
+
+        {% if c.connections %}
+            <div class="people-grid">
+                {% for person in c.connections %}
+                    {% include "interest/_user_card.html" %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="people-empty">
+                {% if c.is_self %}
+                    You haven't connected with anyone yet.
+                    <a href="{{ url_for('home') }}">Explore interests</a> to find Durham students like you.
+                {% else %}
+                    {{ c.user.display_name }} hasn't connected with anyone yet.
+                {% endif %}
+            </p>
+        {% endif %}
+    </section>
+
+    {% if c.is_self and c.outgoing_waves %}
+        <section class="interest-people" aria-labelledby="outgoing-waves-title">
+            <h2 id="outgoing-waves-title">Waves sent ({{ c.outgoing_waves | length }})</h2>
+            <div class="people-grid">
+                {% for person in c.outgoing_waves %}
+                    {% include "interest/_user_card.html" %}
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='profile.js') }}"></script>
+{% endblock %}
