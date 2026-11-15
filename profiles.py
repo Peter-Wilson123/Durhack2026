@@ -18,6 +18,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 import colours
 import profile_api
+from models import User, db
 
 bp = flask.Blueprint("profiles", __name__)
 
@@ -94,6 +95,57 @@ def show(user_id):
 		view_as_enabled=flask.current_app.debug and profile["can_preview"],
 	)
 
+@bp.post("/u/<int:user_id>/edit")
+def edit_post(user_id):
+    if flask_login.current_user.user_id != user_id:
+        return _error("forbidden", 403)
+
+    user = db.session.get(User, user_id)
+    if user is None:
+        return _error("missing", 404)
+
+    action = flask.request.form.get("action", "save")
+
+    # Basics
+    display_name = " ".join(flask.request.form.get("display_name", "").split())[:profile_api.NAME_MAX]
+    user.display_name = display_name or None
+
+    year_val = flask.request.form.get("year", "hide")
+    if year_val in profile_api.YEARS:
+        user.year = year_val
+        user.show_year = True
+    else:
+        user.show_year = False
+
+    colour = flask.request.form.get("avatar_colour", "")
+    if colour in colours.AVATAR_COLOURS:
+        user.avatar_colour = colour
+
+    # Bio & publish state
+    new_bio = flask.request.form.get("bio", "").strip()[:profile_api.BIO_MAX]
+    bio_changed = new_bio != (user.bio or "").strip()
+    user.bio = new_bio
+
+    if not new_bio:
+        user.bio_published = False
+    elif action == "publish":
+        user.bio_published = True
+    elif action == "unpublish":
+        user.bio_published = False
+    elif bio_changed:
+        # Saving edited text keeps changes as a private draft until "Publish bio" is clicked
+        user.bio_published = False
+
+    # Contacts (strip leading '@' if typed)
+    user.contact_instagram = flask.request.form.get("instagram", "").strip().lstrip("@")[:60]
+    user.contact_x = flask.request.form.get("x", "").strip().lstrip("@")[:60]
+    user.contact_email = flask.request.form.get("email", "").strip()[:120]
+
+    db.session.commit()
+
+    if action in ("publish", "unpublish"):
+        return flask.redirect(flask.url_for("profiles.edit", user_id=user_id))
+    return flask.redirect(flask.url_for("profiles.show", user_id=user_id))
 
 @bp.get("/u/<int:user_id>/edit")
 def edit(user_id):

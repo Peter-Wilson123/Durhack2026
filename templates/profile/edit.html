@@ -1,0 +1,134 @@
+{# EditProfileForm: the owner's edit page, with a live "How others see you" preview.
+   TODO(backend): there is no profile update endpoint yet, so the save and publish
+   buttons are disabled and the form has no action. Wire them up once it exists. #}
+{% extends "base.html" %}
+{% from "profile/_avatar.html" import avatar with context %}
+
+{% block title %}Edit profile · Superposition{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-page edit-page">
+	<a class="back-link" href="{{ url_for('profiles.show', user_id=p.id) }}">← Back to profile</a>
+	<h1 class="edit-title">Edit profile</h1>
+
+	<div class="alert alert-warning" role="status">
+		<strong>Saving isn't available yet.</strong> You can try changes here and see them in the preview,
+		but they won't be saved until the backend adds a way to update profiles.
+	</div>
+
+	<div class="edit-layout">
+		<form class="edit-form" id="edit-form" method="post"
+      action="{{ url_for('profiles.edit_post', user_id=p.id) }}"
+      data-published-bio="{{ p.bio if p.bio_published else '' }}"
+      data-bio-published="{{ 'true' if p.bio_published else 'false' }}">
+
+			<fieldset>
+				<legend>Basics</legend>
+
+				<div class="mb-3">
+					<label class="form-label" for="display_name">Display name <span class="optional">optional</span></label>
+					<input class="form-control" id="display_name" name="display_name" maxlength="{{ NAME_MAX }}"
+						value="{{ p.display_name if p.has_display_name else '' }}" placeholder="{{ p.display_name }}"
+						aria-describedby="display_name-help">
+					<div class="form-text" id="display_name-help">Up to {{ NAME_MAX }} characters.</div>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="year">Year</label>
+					<select class="form-select" id="year" name="year">
+						{% for y in YEARS %}
+						<option value="{{ y }}" {% if p.show_year and p.year == y %}selected{% endif %}>{{ y }}</option>
+						{% endfor %}
+						<option value="hide" {% if not p.show_year %}selected{% endif %}>Don't show</option>
+					</select>
+				</div>
+
+				<div class="mb-1">
+					<span class="form-label d-block" id="colour-label">Avatar colour</span>
+					<div class="swatches" role="radiogroup" aria-labelledby="colour-label">
+						{% for key, (label, hex) in AVATAR_COLOURS.items() %}
+						<label class="swatch" style="--swatch: {{ hex }}">
+							<input type="radio" name="avatar_colour" value="{{ key }}" {% if p.avatar_colour == key %}checked{% endif %}>
+							<span class="visually-hidden">{{ label }}</span>
+						</label>
+						{% endfor %}
+					</div>
+				</div>
+			</fieldset>
+
+			<fieldset>
+				<legend>Bio</legend>
+				<div class="bio-field">
+					<label class="form-label" for="bio">About you</label>
+					<textarea class="form-control" id="bio" name="bio" rows="3" maxlength="{{ BIO_MAX }}"
+						aria-describedby="bio-visibility bio-count bio-warning">{{ p.bio }}</textarea>
+					<div class="bio-meta">
+						<p class="bio-visibility" id="bio-visibility">Visible to all verified Durham students once published</p>
+						<p class="bio-count" id="bio-count"><span data-count>{{ p.bio | length }}</span> / {{ BIO_MAX }}</p>
+					</div>
+					<p class="bio-warning" id="bio-warning" hidden>
+						Contact details belong in Contact settings, where only connections see them.
+					</p>
+					<p class="bio-status" id="bio-status" data-state="{{ 'published' if p.bio_published else 'draft' }}"></p>
+					<div class="bio-actions">
+  						<button class="btn btn-outline-secondary btn-sm" type="submit" name="action" value="unpublish" id="bio-unpublish">Unpublish</button>
+						<button class="btn btn-outline-primary btn-sm" type="submit" name="action" value="publish" id="bio-publish">Publish bio</button>
+					</div>
+				</div>
+			</fieldset>
+
+			<fieldset>
+				<legend>Contact <span class="optional">all optional · only connections see these</span></legend>
+				<div class="mb-3">
+					<label class="form-label" for="instagram">Instagram handle</label>
+					<div class="input-group">
+						<span class="input-group-text">@</span>
+						<input class="form-control" id="instagram" name="instagram" value="{{ p.contacts.instagram if p.contacts else '' }}" autocomplete="off">
+					</div>
+				</div>
+				<div class="mb-3">
+					<label class="form-label" for="x">X handle</label>
+					<div class="input-group">
+						<span class="input-group-text">@</span>
+						<input class="form-control" id="x" name="x" value="{{ p.contacts.x if p.contacts else '' }}" autocomplete="off">
+					</div>
+				</div>
+				<div class="mb-3">
+					<label class="form-label" for="email">Contact email</label>
+					<input class="form-control" type="email" id="email" name="email" value="{{ p.contacts.email if p.contacts else '' }}" autocomplete="off">
+				</div>
+			</fieldset>
+
+			<div class="edit-actions">
+  				<button class="btn btn-primary" type="submit" name="action" value="save">Save changes</button>
+  				<a class="btn btn-link" href="{{ url_for('profiles.show', user_id=p.id) }}">Cancel</a>
+			</div>
+			<p class="form-text" id="save-unavailable">Saving and publishing are switched off until the backend can store them.
+				When they work, saving will never publish your bio: only “Publish bio” will.</p>
+		</form>
+
+		<aside class="preview" aria-labelledby="preview-title">
+			<h2 id="preview-title">How others see you</h2>
+			<div class="preview-card">
+				<div class="preview-head">
+					<span data-preview="avatar">{{ avatar(p.avatar_colour, "md") }}</span>
+					<div>
+						<p class="preview-name" data-preview="name">{{ p.display_name }}</p>
+						<p class="preview-year" data-preview="year" {% if not p.show_year %}hidden{% endif %}>{{ p.year or "" }}</p>
+					</div>
+				</div>
+				<p class="preview-bio" data-preview="bio" data-state="hidden">No bio shown.</p>
+			</div>
+			<p class="preview-note">Other students never see your contact details. Connections see them on your Contact card.</p>
+		</aside>
+	</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='profile.js') }}"></script>
+{% endblock %}
