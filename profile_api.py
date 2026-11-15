@@ -39,9 +39,11 @@ from models import Connection, Interest, Tag, User, UserInterest, db
 RELATIONS = ("self", "connection", "other")
 BIO_MAX = 160
 NAME_MAX = 30
-YEARS = ["Fresher", "2nd year", "3rd year", "4th+", "Postgrad", "Other"]
+YEARS = ["1st year", "2nd year", "3rd year",
+         "4th year", "PHD", "Postgrad", "Other"]
 
-FALLBACK_NAME = "Durham student"  # TODO(backend): shown when display_name is empty
+# TODO(backend): shown when display_name is empty
+FALLBACK_NAME = "Durham student"
 
 
 class ProfileNotFound(Exception):
@@ -104,7 +106,8 @@ def to_profile(user):
 
     return {
         "id": user.user_id,
-        "handle": None,  # TODO(backend): no public handle; never use user.username (CIS code)
+        # TODO(backend): no public handle; never use user.username (CIS code)
+        "handle": None,
         "display_name": (user.display_name or "").strip() or FALLBACK_NAME,
         "has_display_name": bool((user.display_name or "").strip()),
         "year": user.year or None,
@@ -119,7 +122,8 @@ def to_profile(user):
 
 
 def _interest(interest):
-	category = interest.category  # most common category across the interest's tags, or None
+	# most common category across the interest's tags, or None
+	category = interest.category
 	slug = category_slug(category.category_name) if category else None
 	return {
 		"id": interest.interest_id,
@@ -153,8 +157,10 @@ def _relation(viewer_id, user_id):
 	row = db.session.scalar(
 		select(Connection).where(
 			or_(
-				(Connection.requester_id == viewer_id) & (Connection.addressee_id == user_id),
-				(Connection.requester_id == user_id) & (Connection.addressee_id == viewer_id),
+				(Connection.requester_id == viewer_id) & (
+					Connection.addressee_id == user_id),
+				(Connection.requester_id == user_id) & (
+					Connection.addressee_id == viewer_id),
 			)
 		)
 	)
@@ -189,9 +195,11 @@ def get_suggestions(user, exclude_ids=(), limit=SUGGESTIONS):
 			if other.interest_id in skip:
 				continue
 			# Higher when related to several of your interests, and near the top of each list
-			scores[other.interest_id] = scores.get(other.interest_id, 0) + 1 / (rank + 1)
+			scores[other.interest_id] = scores.get(
+				other.interest_id, 0) + 1 / (rank + 1)
 			found[other.interest_id] = other
-	best = sorted(scores, key=lambda i: (-scores[i], found[i].interest_name))[:limit]
+	best = sorted(
+		scores, key=lambda i: (-scores[i], found[i].interest_name))[:limit]
 	return [{**_interest(found[i]), "description": found[i].description or ""} for i in best]
 
 
@@ -201,9 +209,6 @@ def get_suggestions_for(user_id, exclude_ids=()):
 	if user is None:
 		raise ProfileNotFound(user_id)
 	return get_suggestions(user, exclude_ids)
-
-
-
 
 
 # functions used for having added connections come up in friends
@@ -220,8 +225,10 @@ def _wave_states_for(viewer_id, user_ids):
     rows = db.session.scalars(
         select(Connection).where(
             or_(
-                (Connection.requester_id == viewer_id) & Connection.addressee_id.in_(others),
-                (Connection.addressee_id == viewer_id) & Connection.requester_id.in_(others),
+                (Connection.requester_id ==
+                 viewer_id) & Connection.addressee_id.in_(others),
+                (Connection.addressee_id ==
+                 viewer_id) & Connection.requester_id.in_(others),
             )
         )
     )
@@ -262,7 +269,8 @@ def get_connections(user_id, viewer):
         select(Connection)
         .where(
             Connection.status == "accepted",
-            or_(Connection.requester_id == user_id, Connection.addressee_id == user_id),
+            or_(Connection.requester_id == user_id,
+                Connection.addressee_id == user_id),
         )
         .order_by(Connection.updated_at.desc())
     ).all()
@@ -279,7 +287,8 @@ def get_connections(user_id, viewer):
             select(Connection)
             .where(
                 Connection.status == "pending",
-                or_(Connection.requester_id == user_id, Connection.addressee_id == user_id),
+                or_(Connection.requester_id == user_id,
+                    Connection.addressee_id == user_id),
             )
             .order_by(Connection.created_at.desc())
         ).all()
