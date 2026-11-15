@@ -24,6 +24,11 @@ document.addEventListener("click", async (event) => {
 	const status = box.querySelector(".wave-status");
 	const userId = box.dataset.user;
 
+	// You can't wave to yourself (the page never shows that button, but just in case)
+	if (userId && userId === document.body.dataset.userId) {
+		status.textContent = "You can't wave to yourself.";
+		return;
+	}
 	button.disabled = true;
 
 	try {
