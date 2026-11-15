@@ -125,8 +125,8 @@ def to_user_card(user_id, display_name, wave_state):
 		"url": f"/u/{user_id}",
 		"handle": None,  # TODO(backend): no public handle
 		"display_name": (display_name or "").strip() or FALLBACK_NAME,
-		"avatar_colour": fallback_avatar(user_id),  # TODO(backend): no avatar colour column
-		"year": None,  # TODO(backend): no year column
+		"avatar_colour": User.avatar_colour,
+		"year": User.year,
 		"wave_state": wave_state,
 	}
 
