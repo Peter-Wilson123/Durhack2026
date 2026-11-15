@@ -1,4 +1,7 @@
-# Durhack2026
+# Durham Superposition
+
+Find Durham students who share your interests. Built for DurHack 2026
+(repository: `Durhack2026`). Not affiliated with Durham University.
 
 ## Profile page: how it works
 
