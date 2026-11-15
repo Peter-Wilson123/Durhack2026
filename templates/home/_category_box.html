@@ -1,0 +1,30 @@
+{# CategoryBox: ONE box used for both the category cards (empty search, filled here on
+   the server) and the search results (filled by home.js from the <template> copies in
+   index.html). Only the interests inside differ: random samples vs ranked matches.
+
+   The category colour is one CSS variable, --cat; home.css mixes the soft tints from it.
+   The category NAME is always shown too (never colour alone: Sport and Recreation are
+   both green). Tags are never shown. #}
+
+{# One interest pill #}
+{% macro category_pill(item, category_name) -%}
+<li><a class="cat-pill" href="{{ item.url }}"><span class="cat-pill-name">{{ item.name }}</span><span class="visually-hidden">, {{ category_name }}</span></a></li>
+{%- endmacro %}
+
+{# key: group key from colours.py; colour: its hex; items: [{name, url}];
+   more: how many more exist that aren't listed (shown as "+N more") #}
+{% macro category_box(key, name, colour, items, more=0, box_id="") -%}
+<section class="cat-box" data-category="{{ key }}" style="--cat: {{ colour }}" aria-labelledby="{{ box_id or 'cat-' ~ key }}">
+	<h2 class="cat-head" id="{{ box_id or 'cat-' ~ key }}"><span class="cat-dot" aria-hidden="true"></span><span class="cat-name">{{ name }}</span></h2>
+	<ul class="cat-pills">
+		{% for item in items %}{{ category_pill(item, name) }}{% endfor %}
+	</ul>
+	{% if more > 0 %}
+	<p class="cat-more">+{{ more }} more</p>
+	{% elif key and not items %}
+	<p class="cat-more">Nothing here yet.</p>
+	{% endif %}
+	{# Search results only: reveals pills past the first 8 (home.js shows it when needed) #}
+	<button type="button" class="cat-more cat-expand" hidden></button>
+</section>
+{%- endmacro %}
