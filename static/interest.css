@@ -52,7 +52,7 @@
 
 .interest-toggle[aria-pressed="true"] {
     background: var(--cat-fg);
-    color: var(--page);  /* dark text on the light category tint (contrast 10.8:1 or more) */
+    color: var(--on-cat-fg);  /* white in light, dark in dark (both >= 4.5:1) */
 }
 
 .interest-toggle:hover,
@@ -64,7 +64,7 @@
 .interest-toggle[aria-pressed="true"]:hover,
 .interest-toggle[aria-pressed="true"]:focus-visible {
     background: var(--cat-fg);
-    color: var(--page);  /* dark text on the light category tint (contrast 10.8:1 or more) */
+    color: var(--on-cat-fg);  /* white in light, dark in dark (both >= 4.5:1) */
     box-shadow: 0 0 0 3px var(--cat-bg);
 }
 
@@ -198,7 +198,7 @@
 .user-card:hover,
 .user-card:focus-within {
     border-color: var(--accent-text);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
+    box-shadow: 0 4px 14px var(--shadow-soft);
 }
 
 .user-card-text p,

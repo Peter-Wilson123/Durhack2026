@@ -79,7 +79,7 @@
 
 .profile-load-error {
     margin-top: 1rem;
-    color: var(--danger-text) !important;
+    color: var(--danger-deep) !important;
 }
 
 /* ---------- Avatar ---------- */
@@ -436,9 +436,9 @@
 .bio-warning {
     margin: .6rem 0 0;
     padding: .5rem .75rem;
-    border-left: 3px solid var(--notice-text);
+    border-left: 3px solid var(--notice-border);
     border-radius: .25rem;
-    background: var(--notice-bg);
+    background: var(--notice-bg-soft);
     color: var(--notice-text) !important;
     font-size: .875rem;
 }
@@ -510,9 +510,9 @@ body:has(.profile-body[data-editing="true"]) {
     gap: .75rem 1rem;
     padding: .75rem max(1rem, calc((100vw - 960px) / 2 + 1rem));
     border-top: 1px solid var(--line);
-    background: rgba(28, 26, 33, .96);
+    background: var(--bar-bg);
     backdrop-filter: blur(8px);
-    box-shadow: 0 -6px 18px rgba(0, 0, 0, .35);
+    box-shadow: 0 -6px 18px var(--shadow-faint);
 }
 
 .edit-bar-status {
@@ -589,7 +589,7 @@ body:has(.profile-body[data-editing="true"]) {
     border: 1px solid var(--line);
     border-radius: .75rem;
     background: var(--surface);
-    box-shadow: 0 10px 24px rgba(0, 0, 0, .45);
+    box-shadow: 0 10px 24px var(--shadow-strong);
 }
 
 .add-interest-options li {

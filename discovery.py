@@ -31,13 +31,19 @@ MAX_PER_GROUP = 10
 WIDEN_BELOW = 18  # only add co-occurring tags when direct results are thin
 
 
-def interest_json(interest: Interest) -> dict:
-	return {
+def interest_json(interest: Interest, score: float | None = None) -> dict:
+	data = {
 		"id": interest.interest_id,
 		"name": interest.interest_name,
 		"url": f"/interests/{interest.interest_id}",
 		"tags": [t.tag_name for t in interest.tags],
 	}
+	if score is not None:
+		# Search results only: the interest's own main category and its match score
+		category = interest.category
+		data["category"] = category.category_name if category else None
+		data["score"] = round(score, 3)
+	return data
 
 
 def _contains(column, q):
@@ -245,7 +251,7 @@ def group_interests(interests, tag_weight=None, scores=None, min_size=1) -> list
 			"key": tag.tag_name,
 			"title": tag.tag_name,
 			"categories": [c.category_name for c in tag.categories][:2],
-			"interests": [interest_json(m) for m in members],
+			"interests": [interest_json(m, scores.get(m.interest_id) if scores else None) for m in members],
 		})
 
 	# Most relevant groups first
@@ -260,7 +266,7 @@ def group_interests(interests, tag_weight=None, scores=None, min_size=1) -> list
 				"key": "__matches",
 				"title": "Matching names",
 				"categories": [],
-				"interests": [interest_json(i) for i in leftovers[:MAX_PER_GROUP]],
+				"interests": [interest_json(i, scores.get(i.interest_id)) for i in leftovers[:MAX_PER_GROUP]],
 			})
 	return groups
 

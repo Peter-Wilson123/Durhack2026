@@ -8,6 +8,10 @@
 		<div class="card-body">
 			<h1 class="h3 mb-4">Join Durham Superposition</h1>
 
+			{% if error %}
+			<div class="alert alert-danger small" role="alert">{{ error }}</div>
+			{% endif %}
+
 			<form method="post">
 				<div class="mb-3">
 					<label for="username" class="form-label">Username</label>

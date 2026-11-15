@@ -174,7 +174,7 @@
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: .75rem;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
+    box-shadow: 0 12px 32px var(--shadow-strong);
     animation: drop-in .18s var(--ease);
 }
 
@@ -542,7 +542,7 @@
 
 .field-error {
     margin: .35rem 0 0;
-    color: var(--danger-text) !important;
+    color: var(--danger-deep) !important;
     font-size: .85rem;
 }
 
@@ -620,7 +620,7 @@
 
 .tag-input:focus-within {
     border-color: var(--accent-text);
-    box-shadow: 0 0 0 .2rem rgba(215, 162, 211, .25);
+    box-shadow: 0 0 0 .2rem var(--focus-ring);
 }
 
 .tag-chips {
@@ -689,7 +689,7 @@
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: .75rem;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
+    box-shadow: 0 12px 32px var(--shadow-strong);
     animation: drop-in .18s var(--ease);
 }
 
