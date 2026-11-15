@@ -13,13 +13,13 @@ get_profile(user_id, viewer, preview_as=None) returns:
 	                  is the CIS code and must NEVER be shown or put in a URL.
 	display_name      users.display_name, else "Durham student"
 	has_display_name  False when display_name is the fallback
-	year, show_year   None, False: TODO(backend) no year column
-	avatar_colour     TODO(backend) no column: picked from the palette by user_id
+	year, show_year   users.year, users.show_year (year removed for others when hidden)
+	avatar_colour     users.avatar_colour, else picked from the palette by user_id
 	interests         [{"id", "name", "url", "category", "category_slug"}] from user_interests
-	bio               users.bio ("" for none)
-	bio_published     True: TODO(backend) no draft column, and bios are already public on /view
+	bio               users.bio ("" for none; "" for others while unpublished)
+	bio_published     users.bio_published
 	connection_count  accepted rows in connections where the user is either side
-	contacts          {} for self and connections: TODO(backend) no contact columns
+	contacts          {"instagram", "x", "email"} (only the ones set) for self and connections,
 	                  None for everyone else (the template shows the locked card)
 	viewer_relation   "self" | "connection" | "other", worked out from connections
 	wave_status       "none" | "sent" | "received", from a pending connections row

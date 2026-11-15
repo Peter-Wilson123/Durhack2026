@@ -7,12 +7,18 @@
 {% endblock %}
 
 {% block content %}
+{% from "home/_category_box.html" import category_box, category_pill %}
+{% set chips = chips or [] %}
+{% set half = (chips | length / 2) | round(0, "ceil") | int %}
 {#
-	One page, three states (set on .home by home.js):
-	  initial – heading, search and the 10 category cards
-	  search  – search pinned to the top. Empty query: category cards. Typed query: tag boxes
-	  create  – nothing found, so offer to create it
-	Category cards come from home_api.py; tag boxes from /api/discover.
+	One page, states set on .home by home.js from two values, isSearchMode and query:
+	  initial  (resting)  not in search mode, empty query: heading, carousel, three options
+	  search   in search mode, empty query: the 10 category cards (random samples)
+	  results  typed query: the same category boxes, holding ranked matches
+	  create   "Create a new interest" was chosen (from the empty state or an option)
+	Everything marked data-search-area counts as "inside search": focus or clicks
+	there keep search mode open. Category cards come from home_api.py; results from
+	/api/discover, regrouped by category in static/groupResults.js.
 #}
 <noscript>
 	<style>
@@ -31,7 +37,7 @@
 		</div>
 	</div>
 
-	<form class="search-bar" id="search-form" role="search" autocomplete="off">
+	<form class="search-bar" id="search-form" role="search" autocomplete="off" data-search-area>
 		<label class="visually-hidden" for="search-input">Search interests</label>
 		<div class="search-field">
 			<svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -50,48 +56,76 @@
 			</button>
 			<ul class="search-results" id="search-results" role="listbox" aria-label="Matching interests" hidden></ul>
 		</div>
-		<p class="visually-hidden" id="search-status" aria-live="polite"></p>
 	</form>
 
-	<!-- Browse: category cards (empty query) or tag boxes (typed query) -->
-	<div class="panel" data-for="initial search" id="explore">
+	<!-- Resting: carousel of suggested interests and the three options -->
+	<div class="panel" data-for="initial">
+		<div class="panel-inner">
+			{% if chips %}
+			<div class="marquee" aria-label="Suggested interests">
+				{% for row in [chips[:half], chips[half:]] %}
+				<div class="marquee-row {{ 'reverse' if loop.index == 2 }}">
+					<div class="marquee-track">
+						{% for pass in [1, 2] %}
+						{% for name in row %}
+						<button type="button" class="chip" data-interest="{{ name }}" {% if pass==2 %}aria-hidden="true"
+							tabindex="-1" {% endif %}>{{ name }}</button>
+						{% endfor %}
+						{% endfor %}
+					</div>
+				</div>
+				{% endfor %}
+			</div>
+			{% endif %}
+
+			<div class="hero-actions">
+				<a class="action-card" href="#explore" data-go="search">
+					<strong>Browse</strong>
+					<span>Explore interests and how they connect</span>
+				</a>
+				<a class="action-card" href="#create" data-go="create">
+					<strong>Add an interest</strong>
+					<span>Start something new</span>
+				</a>
+				{% if current_user.is_authenticated %}
+				<a class="action-card" href="/u/">
+					<strong>Your profile</strong>
+					<span>See who shares your interests</span>
+				</a>
+				{% else %}
+				<a class="action-card" href="{{ url_for('login_get') }}">
+					<strong>Sign in</strong>
+					<span>Find people like you</span>
+				</a>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+
+	<!-- Search: category cards (empty query) or category-grouped results (typed query) -->
+	<div class="panel" data-for="search results" id="explore" data-search-area>
 		<div class="panel-inner">
 			<div class="groups-note" id="groups-note">
 				<p id="groups-note-text">Browse by category</p>
-				<button type="button" class="btn btn-link groups-create" id="groups-create" hidden></button>
+				<a class="btn btn-link groups-create" id="groups-create" href="#create" hidden>Create a new interest</a>
 				<button type="button" class="btn btn-link groups-create" id="groups-retry" hidden>Try again</button>
 			</div>
+			<p class="visually-hidden" id="search-status" aria-live="polite"></p>
 
-			{# CategoryCards: shown whenever the search box is empty. Never tags. #}
-			<div class="groups categories" id="categories">
+			{# State 2: the 10 category cards, with random samples picked once per page load #}
+			<div class="cat-grid" id="categories">
 				{% for card in home_category_cards() %}
-				<section class="group category-card" data-category="{{ card.key }}"
-					style="--g: {{ card.strong }}; --pill-bg: {{ card.bg }}; --pill-fg: {{ card.fg }}"
-					aria-labelledby="cat-{{ card.key }}">
-					<h2 class="category-head" id="cat-{{ card.key }}">{{ card.name }}</h2>
-					{% if card.samples %}
-					<ul class="group-items">
-						{% for s in card.samples %}
-						<li><a class="group-chip category-chip" href="{{ s.url }}">{{ s.name }}<span class="visually-hidden">, {{ card.name }}</span></a></li>
-						{% endfor %}
-					</ul>
-					{% if card.total > card.samples | length %}
-					<p class="category-more">{{ card.total - card.samples | length }} more in {{ card.name }}</p>
-					{% endif %}
-					{% else %}
-					<p class="category-more">Nothing here yet.</p>
-					{% endif %}
-				</section>
+				{{ category_box(card.key, card.name, card.strong, card.samples, card.total - card.samples | length) }}
 				{% endfor %}
 			</div>
 
-			{# TagBoxes: shown once something is typed (filled in by home.js) #}
-			<div class="groups" id="groups" hidden></div>
+			{# State 3: the same boxes holding matches, filled in by home.js #}
+			<div class="cat-grid" id="results" hidden></div>
 		</div>
 	</div>
 
 	<!-- Create: nothing found -->
-	<div class="panel" data-for="create" id="create">
+	<div class="panel" data-for="create" id="create" data-search-area>
 		<div class="panel-inner">
 			<h2 class="create-title" id="create-title">Not here yet…</h2>
 			<p class="create-lead" id="create-lead">Be the first. Add it below and others can join.</p>
@@ -106,8 +140,11 @@
 
 </div>
 <script type="application/json" id="category-palette">{{ category_palette() | tojson }}</script>
+<template id="cat-box-template">{{ category_box("", "", "", [], box_id="cat-box-id") }}</template>
+<template id="cat-pill-template">{{ category_pill({"name": "", "url": ""}, "") }}</template>
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='groupResults.js') }}"></script>
 <script src="{{ url_for('static', filename='home.js') }}"></script>
 {% endblock %}

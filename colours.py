@@ -79,12 +79,14 @@ def category_style(slug):
 
 
 def palette_for_js():
-	"""{backend slug: {name, strong, bg, fg}} so home.js colours tag boxes from this file."""
-	out = {}
-	for slug, key in CATEGORY_GROUP.items():
-		name, strong, bg, fg = GROUPS[key]
-		out[slug] = {"name": name, "strong": strong, "bg": bg, "fg": fg}
-	return out
+	"""
+	{"categories": {backend slug: group key}, "groups": {group key: {name, colour}}}
+	so home.js groups and colours search results from this file. "other" is the
+	grey fallback for untagged or unmapped interests.
+	"""
+	groups = {key: {"name": name, "colour": strong} for key, (name, strong, _bg, _fg) in GROUPS.items()}
+	groups["other"] = {"name": FALLBACK_GROUP[0], "colour": FALLBACK_GROUP[1]}
+	return {"categories": dict(CATEGORY_GROUP), "groups": groups}
 
 
 # key: (label shown to people, colour). White icons have at least 4.5 : 1 on each.

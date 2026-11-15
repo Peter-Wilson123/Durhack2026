@@ -32,6 +32,7 @@
 }
 
 .home[data-state="search"],
+.home[data-state="results"],
 .home[data-state="create"] {
     padding-top: 1rem;
 }
@@ -70,6 +71,7 @@
 
 .home[data-state="initial"] .panel[data-for~="initial"],
 .home[data-state="search"] .panel[data-for~="search"],
+.home[data-state="results"] .panel[data-for~="results"],
 .home[data-state="create"] .panel[data-for~="create"] {
     grid-template-rows: 1fr;
     opacity: 1;
@@ -221,27 +223,109 @@
     font-size: .85rem;
 }
 
-/* ---------- Search: related-interest groupings ---------- */
-.home {
-    /* Grouping palette: distinct from each other and from the accent */
-    --g0: #2F6FDB;
-    /* blue */
-    --g1: #C8961E;
-    /* gold */
-    --g2: #2E9E5B;
-    /* green */
-    --g3: #D2553F;
-    /* coral */
-    --g4: #1F9AA8;
-    /* teal */
-    --g5: #5B5BD6;
-    /* indigo */
-    --g6: #8A8F2A;
-    /* olive */
-    --g7: #C2457E;
-    /* rose */
+/* ---------- Resting: carousel and the three options ----------
+   Restored as they were before the category cards (commit 502c4a5 removed them). */
+.marquee {
+    display: grid;
+    gap: .75rem;
+    margin: 1.5rem -1rem 3rem;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
 }
 
+.marquee-track {
+    display: flex;
+    gap: .75rem;
+    width: max-content;
+    animation: marquee 40s linear infinite;
+}
+
+.marquee-row.reverse .marquee-track {
+    animation-direction: reverse;
+}
+
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track {
+    animation-play-state: paused;
+}
+
+@keyframes marquee {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(calc(-50% - .375rem));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+        animation: none;
+        flex-wrap: wrap;
+        width: auto;
+        justify-content: center;
+    }
+
+    .marquee-track [aria-hidden="true"] {
+        display: none;
+    }
+}
+
+.chip {
+    flex: none;
+    padding: .45rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    white-space: nowrap;
+}
+
+.chip:hover,
+.chip:focus-visible {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.hero-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.action-card {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+    padding: 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    background: var(--surface);
+    color: var(--ink);
+    text-decoration: none;
+    transition: border-color .15s, transform .15s;
+}
+
+.action-card span {
+    color: var(--muted);
+    font-size: .9rem;
+}
+
+.action-card:hover,
+.action-card:focus-visible {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.action-card:hover strong,
+.action-card:focus-visible strong {
+    color: var(--accent);
+}
+
+/* ---------- Note above the boxes ---------- */
 .groups-note {
     display: flex;
     flex-wrap: wrap;
@@ -262,8 +346,12 @@
     text-decoration: none;
 }
 
-.groups {
-    position: relative;
+/* ---------- CategoryBox (templates/home/_category_box.html) ----------
+   One look for the category cards AND the search results. The colour is one
+   variable, --cat, used softly: a 35% border, a 14% header tint, 15% pills
+   with a 30% border, and one solid dot. Text stays the normal ink colour,
+   so it passes WCAG AA (4.5:1) on every tint. */
+.cat-grid {
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
@@ -272,86 +360,124 @@
 }
 
 /* Loading: keep the current boxes, just dimmed, so the grid never collapses */
-.groups[aria-busy="true"] {
+.cat-grid[aria-busy="true"] {
     opacity: .55;
 }
 
-.group {
-    --g: var(--g0);
-    /* Rectangular boxes: start at 16rem and grow to fill each row */
+.cat-box {
+    --cat: #57534E;
+    /* Rectangular boxes: start at 16rem and grow to fill each row (a flush rectangle) */
     flex: 1 1 16rem;
     min-width: 0;
-    padding: 1rem 1.25rem 1.1rem;
-    border: 2px solid var(--g);
+    padding-bottom: 1rem;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--cat) 35%, transparent);
     border-radius: 1rem;
-    background: color-mix(in srgb, var(--g) 7%, var(--surface));
+    background: var(--surface);
 }
 
-.group-head {
+.cat-head {
     display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: .15rem .6rem;
-    margin-bottom: .65rem;
-}
-
-.group h3 {
+    align-items: center;
+    gap: .55rem;
     margin: 0;
-    font-size: 1.15rem;
+    padding: .6rem 1.1rem;
+    background: color-mix(in srgb, var(--cat) 14%, var(--surface));
+    color: var(--ink);
+    font-size: 1rem;
     font-weight: 700;
-    color: var(--g);
 }
 
-.home .group-cats {
-    margin: 0;
-    font-size: .8rem;
-    color: color-mix(in srgb, var(--g) 55%, var(--muted));
+.cat-dot {
+    flex: none;
+    width: .65rem;
+    height: .65rem;
+    border-radius: 50%;
+    background: var(--cat);
 }
 
-.group-items {
+.cat-pills {
     display: flex;
     flex-wrap: wrap;
     gap: .45rem;
     margin: 0;
-    padding: 0;
+    padding: .85rem 1.1rem 0;
     list-style: none;
 }
 
-.group-chip {
-    display: inline-block;
-    padding: .35rem .8rem;
-    border: 1px solid color-mix(in srgb, var(--g) 30%, var(--line));
-    border-radius: 999px;
-    background: var(--surface);
-    color: var(--ink);
-    text-decoration: none;
-    transition: border-color .15s, color .15s, background-color .15s;
-}
-
-/* At most 8 pills until "+N more" is pressed (PILLS_PER_GROUP in home.js) */
-.group:not(.expanded) .group-items li:nth-child(n + 9) {
+.cat-pills:empty {
     display: none;
 }
 
-.group-more {
-    margin-top: .6rem;
+.cat-pill {
+    display: inline-block;
+    max-width: 100%;
+    padding: .3rem .8rem;
+    border: 1px solid color-mix(in srgb, var(--cat) 30%, transparent);
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--cat) 15%, var(--surface));
+    color: var(--ink);
+    text-decoration: none;
+    /* Long names wrap inside the pill instead of running out of the box */
+    overflow-wrap: anywhere;
+    transition: border-color .15s, background-color .15s;
+}
+
+.cat-pill:hover,
+.cat-pill:focus-visible {
+    border-color: var(--cat);
+    background: color-mix(in srgb, var(--cat) 24%, var(--surface));
+    color: var(--ink);
+}
+
+.cat-pill:focus-visible,
+.cat-expand:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* At most 8 pills until "+N more" is pressed (PILLS_PER_BOX in home.js) */
+.cat-box:not(.expanded) .cat-pills li:nth-child(n + 9) {
+    display: none;
+}
+
+.home .cat-more {
+    display: block;
+    margin: .7rem 1.1rem 0;
     padding: 0;
     border: 0;
     background: none;
-    color: var(--g);
-    font-size: .875rem;
-    font-weight: 600;
+    color: var(--muted);
+    font-size: .85rem;
 }
 
-.group-more:hover {
+.home .cat-expand {
+    color: var(--ink);
+    font-weight: 600;
     text-decoration: underline;
 }
 
-.group-chip:hover,
-.group-chip:focus-visible {
-    border-color: var(--g);
-    background: color-mix(in srgb, var(--g) 12%, var(--surface));
-    color: var(--g);
+.home .cat-more[hidden] {
+    display: none;
+}
+
+/* "No matches yet" */
+.home .results-empty {
+    margin: 1rem 0;
+    text-align: center;
+}
+
+/* One column of boxes on phones */
+@media (max-width: 639.98px) {
+    .cat-box {
+        flex-basis: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cat-grid {
+        transition: none;
+    }
 }
 
 /* ---------- Create ---------- */
@@ -613,66 +739,14 @@
         padding: .8rem .75rem;
     }
 
+    .hero-actions {
+        grid-template-columns: 1fr;
+    }
+
     /* bigger touch targets */
 }
-/* One column of boxes on small phones */
-@media (max-width: 639.98px) {
-    .group {
-        flex-basis: 100%;
-    }
-}
 
-@media (prefers-reduced-motion: reduce) {
-    .groups {
-        transition: none;
-    }
-}
-
-/* ---------- Category cards (empty search) ---------- */
-/* Same box rules as tag boxes: .group gives flex: 1 1 16rem, min-width: 0 */
-.category-card {
-    padding: 0 0 1rem;
-    overflow: hidden;
-    background: var(--surface);
-}
-
-.category-head {
-    margin: 0 0 .85rem;
-    padding: .6rem 1.25rem;
-    background: var(--g);
-    color: #fff;
-    font-size: 1.05rem;
-    font-weight: 700;
-}
-
-.category-card .group-items {
-    padding: 0 1.25rem;
-}
-
-.home .category-more {
-    margin: .6rem 1.25rem 0;
-    font-size: .8rem;
-}
-
-/* Pills in category cards and categorised tag boxes use the category's pale colours */
-.category-card .group-chip,
-.group.has-category .group-chip {
-    border-color: transparent;
-    background: var(--pill-bg);
-    color: var(--pill-fg);
-    font-weight: 600;
-}
-
-.category-card .group-chip:hover,
-.category-card .group-chip:focus-visible,
-.group.has-category .group-chip:hover,
-.group.has-category .group-chip:focus-visible {
-    border-color: var(--pill-fg);
-    background: var(--pill-bg);
-    color: var(--pill-fg);
-}
-
-.home .group.has-category .group-cats {
-    color: var(--g);
-    font-weight: 600;
+.cat-pills li {
+    min-width: 0;
+    max-width: 100%;
 }

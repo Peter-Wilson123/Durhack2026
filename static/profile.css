@@ -728,3 +728,14 @@
         transition: none;
     }
 }
+
+/* Field errors in edit mode (fields are shared with settings) */
+.profile-page .field-error {
+    margin: .3rem 0 0;
+    color: #B42318;
+    font-size: .85rem;
+}
+
+.profile-page .field-error:empty {
+    display: none;
+}

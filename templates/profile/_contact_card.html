@@ -1,6 +1,7 @@
 {# ContactCard: icon links for connections (and the owner); a locked state for everyone else.
    For strangers p.contacts is None, so no contact data is ever in the page. #}
 {% from "profile/_badge.html" import only_you %}
+{% import "account/_fields.html" as fields with context %}
 <section class="profile-card card-contact" aria-labelledby="contact-title">
 	<h2 id="contact-title">Contact</h2>
 
@@ -55,15 +56,11 @@
 	{% endif %}
 	{% if p.viewer_relation == "self" %}
 	<p class="card-note view-only">{{ only_you("Only your connections see these") }}</p>
-	<div class="edit-only contact-editor" aria-describedby="contact-note">
-		<label class="form-label" for="edit-instagram">Instagram</label>
-		<input class="form-control mb-2" id="edit-instagram" placeholder="@handle" disabled>
-		<label class="form-label" for="edit-x">X</label>
-		<input class="form-control mb-2" id="edit-x" placeholder="@handle" disabled>
-		<label class="form-label" for="edit-email">Contact email</label>
-		<input class="form-control" id="edit-email" type="email" disabled>
-		<p class="field-note" id="contact-note">Contact details can't be saved yet: the backend has no contact fields. Only your connections will see them.</p>
-	</div>
+	<fieldset class="edit-only contact-editor" id="contact-fields" aria-describedby="contact-note">
+		<legend class="visually-hidden">Contact details</legend>
+		{{ fields.contact_fields(p, "edit") }}
+		<p class="field-note" id="contact-note">All optional. Only your connections see these.</p>
+	</fieldset>
 	{% endif %}
 	{% endif %}
 </section>

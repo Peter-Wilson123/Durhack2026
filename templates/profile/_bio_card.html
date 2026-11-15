@@ -31,10 +31,11 @@
 		</p>
 		<div class="bio-actions">
 			<button type="button" class="btn btn-primary btn-sm" data-action="publish-bio">Publish bio</button>
+			<button type="button" class="btn btn-outline-secondary btn-sm" data-action="unpublish-bio" {% if not p.bio_published %}hidden{% endif %}>Unpublish</button>
 			<span class="bio-save-status" id="bio-status" role="status" aria-live="polite"></span>
 		</div>
 		<p class="field-note" id="bio-note">
-			Until the backend supports drafts, a bio is only saved when you publish it, and it can't be cleared.
+			Only “Publish bio” makes it public. “Unpublish” hides it again; only you will see it.
 		</p>
 	</div>
 	{% endif %}

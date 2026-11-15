@@ -157,3 +157,6 @@ def edit(user_id):
 
 def init_app(app):
 	app.register_blueprint(bp)
+	# Account settings live in settings.py; registered here so app.py doesn't need changing
+	import settings
+	settings.init_app(app)

@@ -1,0 +1,73 @@
+{# Profile detail fields, shared by profile edit mode (profile/_header.html,
+   profile/_contact_card.html) and Account settings (settings/page.html), so the
+   two can't drift apart. Field names match the backend's POST /u/<id>/edit form
+   (profiles.edit_post): display_name, year, avatar_colour, instagram, x, email.
+   `prefix` keeps ids unique on a page. Saving is done by static/account.js. #}
+
+{# Display name: optional, up to NAME_MAX characters #}
+{% macro name_field(p, prefix, large=false) -%}
+<label class="form-label" for="{{ prefix }}-name">Display name <span class="optional">optional</span></label>
+<input class="form-control{{ ' form-control-lg' if large }}" id="{{ prefix }}-name" name="display_name"
+	value="{{ p.display_name if p.has_display_name else '' }}" placeholder="Durham student"
+	maxlength="{{ NAME_MAX }}" autocomplete="nickname" aria-describedby="{{ prefix }}-name-help {{ prefix }}-name-error">
+<p class="form-text" id="{{ prefix }}-name-help">Up to {{ NAME_MAX }} characters. Leave it empty to show “Durham student”.</p>
+<p class="field-error" id="{{ prefix }}-name-error" role="alert"></p>
+{%- endmacro %}
+
+{# Year, including "Don't show" (which keeps the year but hides it) #}
+{% macro year_field(p, prefix) -%}
+<label class="form-label" for="{{ prefix }}-year">Year</label>
+<select class="form-select" id="{{ prefix }}-year" name="year">
+	{% for y in YEARS %}<option value="{{ y }}" {% if p.show_year and p.year == y %}selected{% endif %}>{{ y }}</option>{% endfor %}
+	<option value="hide" {% if not p.show_year %}selected{% endif %}>Don't show</option>
+</select>
+{%- endmacro %}
+
+{# Avatar colour: native radios, so arrow keys move between swatches #}
+{% macro colour_field(p, prefix) -%}
+<span class="form-label d-block" id="{{ prefix }}-colour-label">Avatar colour</span>
+<div class="swatches" role="radiogroup" aria-labelledby="{{ prefix }}-colour-label">
+	{% for key, (label, hex) in AVATAR_COLOURS.items() %}
+	<label class="swatch" style="--swatch: {{ hex }}">
+		<input type="radio" name="avatar_colour" value="{{ key }}" {% if p.avatar_colour == key %}checked{% endif %}>
+		<span class="visually-hidden">{{ label }}</span>
+	</label>
+	{% endfor %}
+</div>
+{%- endmacro %}
+
+{# Contact details: all optional, only connections ever see them #}
+{% macro contact_fields(p, prefix) -%}
+{% set c = p.contacts or {} %}
+<label class="form-label" for="{{ prefix }}-instagram">Instagram</label>
+<div class="input-group mb-2">
+	<span class="input-group-text">@</span>
+	<input class="form-control" id="{{ prefix }}-instagram" name="instagram" value="{{ c.instagram or '' }}" maxlength="60" autocomplete="off">
+</div>
+<label class="form-label" for="{{ prefix }}-x">X</label>
+<div class="input-group mb-2">
+	<span class="input-group-text">@</span>
+	<input class="form-control" id="{{ prefix }}-x" name="x" value="{{ c.x or '' }}" maxlength="60" autocomplete="off">
+</div>
+<label class="form-label" for="{{ prefix }}-email">Contact email</label>
+<input class="form-control" id="{{ prefix }}-email" name="email" type="email" value="{{ c.email or '' }}" maxlength="120"
+	autocomplete="off" aria-describedby="{{ prefix }}-email-error">
+<p class="field-error" id="{{ prefix }}-email-error" role="alert"></p>
+{%- endmacro %}
+
+{# The owner's saved values, so static/account.js can send the whole form
+   (the backend overwrites every field on each save). Owner pages only. #}
+{% macro saved_values(p) -%}
+<script type="application/json" id="profile-saved">{{ {
+	"user_id": p.id,
+	"display_name": p.display_name if p.has_display_name else "",
+	"year": p.year if p.show_year else "hide",
+	"stored_year": p.year or "",
+	"avatar_colour": p.avatar_colour,
+	"bio": p.bio,
+	"bio_published": p.bio_published,
+	"instagram": (p.contacts or {}).instagram or "",
+	"x": (p.contacts or {}).x or "",
+	"email": (p.contacts or {}).email or "",
+} | tojson }}</script>
+{%- endmacro %}

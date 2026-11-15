@@ -76,9 +76,9 @@ document.querySelectorAll(".view-as a").forEach((link) => {
 });
 
 // ---------- Saving through the backend ----------
-
-// The backend's only update endpoint: POST /update-account with form fields
-// ("new-bio", "new-interests", "remove-interests"). It redirects to /account when done.
+// Profile details and the bio: saveProfile() in account.js (POST /u/<id>/edit).
+// Interests: POST /update-account with "new-interests" / "remove-interests".
+// It redirects to /account when done.
 async function updateAccount(fields) {
 	const response = await fetch("/update-account", { method: "POST", body: new URLSearchParams(fields) });
 	if (!response.ok || !response.url.endsWith("/account")) throw new Error(response.status);
@@ -137,28 +137,82 @@ function updateBioEditor() {
 	document.querySelector("#bio-count [data-count]").textContent = bio.value.length;
 	document.getElementById("bio-warning").hidden = !CONTACT_PATTERN.test(bio.value);
 	const publish = document.querySelector("[data-action='publish-bio']");
-	// The backend ignores an empty bio, so publishing one would do nothing
-	publish.disabled = !bio.value.trim() || !bioDirty();
+	const saved = readSavedProfile();
+	// Publishing needs some text, and either new text or a bio that isn't public yet
+	publish.disabled = !bio.value.trim() || (!bioDirty() && !!saved?.bio_published);
 	document.getElementById("bio-status").textContent = bioDirty() ? "Not published yet" : "";
 }
 
-async function publishBio() {
+// The name, year, colour and contact inputs shown in edit mode (shared with settings)
+const DETAIL_FIELDS = ["display_name", "year", "avatar_colour", "instagram", "x", "email"];
+
+// What the detail inputs hold right now
+function detailValues() {
+	const body = profileBody();
+	const values = {};
+	DETAIL_FIELDS.forEach((field) => {
+		const inputs = body.querySelectorAll(`#header-fields [name='${field}'], #contact-fields [name='${field}']`);
+		if (!inputs.length) return;
+		const input = inputs[0].type === "radio" ? [...inputs].find((i) => i.checked) : inputs[0];
+		values[field] = input ? input.value.trim() : "";
+	});
+	return values;
+}
+
+// Have any detail inputs changed since the last save?
+function detailsDirty() {
+	const saved = readSavedProfile();
+	if (!saved || !profileBody()) return false;
+	return Object.entries(detailValues()).some(([field, value]) => value !== (saved[field] ?? ""));
+}
+
+// Put the detail inputs back to the saved values
+function resetDetails() {
+	const saved = readSavedProfile();
+	const body = profileBody();
+	if (!saved || !body) return;
+	DETAIL_FIELDS.forEach((field) => {
+		body.querySelectorAll(`#header-fields [name='${field}'], #contact-fields [name='${field}']`).forEach((input) => {
+			if (input.type === "radio") input.checked = input.value === saved[field];
+			else input.value = saved[field] ?? "";
+		});
+	});
+	body.querySelectorAll(".field-error").forEach((p) => { p.textContent = ""; });
+}
+
+// Remember new saved values in the page
+function storeSaved(values) {
+	document.getElementById("profile-saved").textContent = JSON.stringify(values);
+}
+
+// Publish (or unpublish) the bio through POST /u/<id>/edit
+async function setBioPublished(publish) {
 	const bio = document.getElementById("edit-bio");
 	const status = document.getElementById("bio-status");
-	const text = bio.value.trim();
-	status.textContent = "Publishing…";
+	const text = publish ? bio.value.trim() : readSavedProfile().bio;
+	status.textContent = publish ? "Publishing…" : "Unpublishing…";
 	try {
-		await updateAccount({ "new-bio": text });
+		const saved = await saveProfile(readSavedProfile(), { bio: text }, publish ? "publish" : "unpublish");
+		storeSaved(saved);
 		document.getElementById("bio-editor").dataset.savedBio = text;
-		// Show the new bio in the card when edit mode ends
+		// Show the bio in the card when edit mode ends
 		const card = document.querySelector(".card-about .view-only");
-		card.replaceChildren(Object.assign(document.createElement("p"), { className: "bio-text", textContent: text }));
+		const parts = [];
+		if (text) parts.push(Object.assign(document.createElement("p"), { className: "bio-text", textContent: text }));
+		if (text && !saved.bio_published) {
+			parts.push(Object.assign(document.createElement("p"), { className: "card-note", textContent: "Draft · only you can see this" }));
+		}
+		if (!text) parts.push(Object.assign(document.createElement("p"), { className: "card-empty", textContent: "You haven't written a bio yet." }));
+		card.replaceChildren(...parts);
+		document.querySelector("[data-action='unpublish-bio']").hidden = !saved.bio_published;
 		updateBioEditor();
-		status.textContent = "Published";
-		say("Bio published. All verified Durham students can now see it.");
-	} catch {
-		status.textContent = "Couldn't publish. Try again";
-		say("Your bio wasn't published. Check your connection and try again.");
+		status.textContent = saved.bio_published ? "Published" : "Unpublished";
+		say(saved.bio_published
+			? "Bio published. All verified Durham students can now see it."
+			: "Bio unpublished. Only you can see it now.");
+	} catch (error) {
+		status.textContent = "Not saved. Try again";
+		say(error.message);
 	}
 }
 
@@ -168,12 +222,35 @@ function cancelEdit() {
 		document.getElementById("edit-bio").value = editor.dataset.savedBio;
 		updateBioEditor();
 	}
+	resetDetails();
 	setEditing(false);
 }
 
-function doneEdit() {
+// "Done": save changed details, then leave edit mode
+async function doneEdit() {
 	if (bioDirty() && !confirm("Your bio changes aren't published. Leave edit mode and lose them?")) return;
-	cancelEdit();
+	if (!detailsDirty()) { cancelEdit(); return; }
+
+	const saved = readSavedProfile();
+	const changes = detailValues();
+	const errors = checkProfileValues({ ...saved, ...changes });
+	document.getElementById("edit-name-error").textContent = errors.display_name || "";
+	const emailError = document.getElementById("edit-email-error");
+	if (emailError) emailError.textContent = errors.email || "";
+	if (Object.keys(errors).length) { say("Check the highlighted fields."); return; }
+
+	const done = document.querySelector("[data-action='done-edit']");
+	done.disabled = true;
+	say("Saving…");
+	try {
+		// The bio is sent as last saved, so its publish state doesn't change
+		await saveProfile(saved, changes, "save");
+		window.onbeforeunload = null;
+		location.href = `/u/${saved.user_id}`;  // show the saved profile
+	} catch (error) {
+		done.disabled = false;
+		say(error.message);
+	}
 }
 
 // Remove an interest (× on a pill)
@@ -317,7 +394,8 @@ document.addEventListener("click", (event) => {
 		case "edit": return setEditing(true);
 		case "cancel-edit": return cancelEdit();
 		case "done-edit": return doneEdit();
-		case "publish-bio": return publishBio();
+		case "publish-bio": return setBioPublished(true);
+		case "unpublish-bio": return setBioPublished(false);
 		case "start-adding":
 			setEditing(true);
 			return document.getElementById("add-interest-input")?.focus();
@@ -346,9 +424,9 @@ document.addEventListener("focusout", (event) => {
 	if (event.target.id === "add-interest-input") hideAddOptions();
 });
 
-// Warn before leaving the page with an unpublished bio
+// Warn before leaving the page with an unpublished bio or unsaved details
 window.onbeforeunload = (event) => {
-	if (bioDirty()) { event.preventDefault(); return ""; }
+	if (bioDirty() || detailsDirty()) { event.preventDefault(); return ""; }
 };
 
 // /u/<id>?edit=1 opens straight into edit mode
