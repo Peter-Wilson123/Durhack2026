@@ -55,3 +55,17 @@ test("fallback: tag groups become ranked, category-grouped results", () => {
 	// No tag names leak into the results
 	assert.ok(boxes.every((b) => b.interests.every((i) => !("tags" in i))));
 });
+
+test("uses each interest's own category and score when the backend sends them", () => {
+	const categoryOf = (name) => ({ "Arts and creative expression": "arts", "Engineering and invention": "technology" })[name];
+	const tagGroups = [
+		{ categories: ["Arts and creative expression"], interests: [
+			{ id: 1, name: "Cyanotype Printing", category: "Arts and creative expression", score: 7 },
+			{ id: 2, name: "3D Printing", category: "Engineering and invention", score: 9 },
+			{ id: 3, name: "Untagged", category: null, score: 3 },
+		] },
+	];
+	const boxes = groupByCategory(flattenTagGroups(tagGroups, categoryOf));
+	assert.deepEqual(boxes.map((b) => b.category), ["technology", "arts", "other"]);
+	assert.equal(boxes[0].interests[0].name, "3D Printing");
+});

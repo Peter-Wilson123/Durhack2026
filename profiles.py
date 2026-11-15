@@ -27,6 +27,7 @@ def _template_helpers():
 	return {
 		"category_style": colours.category_style,
 		"avatar_colour": colours.avatar_colour,
+		"category_theme_css": colours.theme_css,
 		"AVATAR_COLOURS": colours.AVATAR_COLOURS,
 		"YEARS": profile_api.YEARS,
 		"BIO_MAX": profile_api.BIO_MAX,
