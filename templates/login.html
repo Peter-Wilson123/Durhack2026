@@ -10,13 +10,12 @@
 
 			{# Shown by the script below when the backend sends us back here after a sign-in attempt #}
 			<div class="alert alert-danger small" id="signin-failed" role="alert" hidden>
-				We couldn't sign you in. This site is for Durham students only. Please use your student
-				@durham.ac.uk address, and check your password.
+				We couldn't sign you in. Please check your username/email and password.
 			</div>
 
 			<form method="post" id="signin-form">
 				<p class="text-muted small mb-3" id="signin-help">
-					This site is for Durham students only. Please use your student @durham.ac.uk address.
+					Welcome!
 				</p>
 				<div class="mb-3">
 					<!-- The backend accepts an email or a username (the CIS code) here, as "identifier".
@@ -47,13 +46,13 @@
 	(function () {
 		const KEY = "signin-attempt";
 		let sentAt = 0;
-		try { sentAt = Number(sessionStorage.getItem(KEY)); sessionStorage.removeItem(KEY); } catch {}
+		try { sentAt = Number(sessionStorage.getItem(KEY)); sessionStorage.removeItem(KEY); } catch { }
 		if (sentAt && Date.now() - sentAt < 8000) {
 			document.getElementById("signin-failed").hidden = false;
 			document.getElementById("identifier").focus();
 		}
 		document.getElementById("signin-form").addEventListener("submit", () => {
-			try { sessionStorage.setItem(KEY, String(Date.now())); } catch {}
+			try { sessionStorage.setItem(KEY, String(Date.now())); } catch { }
 		});
 	})();
 </script>
