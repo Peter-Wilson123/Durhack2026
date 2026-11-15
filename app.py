@@ -74,8 +74,8 @@ def login_post():
 	password = flask.request.form.get("password", "")
 
 	# Matches either username (CIS code) or email in the database
-	user = auth.load_user(username=identifier,
-                       email=identifier, password=password)
+	user = auth.verify_user(username=identifier,
+                         email=identifier, password=password)
 	if not user:
 		return flask.redirect(flask.url_for("login_get"))
 
