@@ -1,0 +1,107 @@
+/* Account settings (/settings). Shares form styles with profile.css. */
+.settings-page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+}
+
+.settings-title {
+    margin: .75rem 0 1.5rem;
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.settings-section {
+    margin-bottom: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    background: var(--surface);
+}
+
+.settings-section h2 {
+    margin: 0 0 1rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.settings-page p {
+    color: var(--muted);
+}
+
+.settings-fields {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.settings-fields fieldset {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.settings-legend {
+    margin-bottom: .5rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.settings-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem 1rem;
+    margin-top: 1.25rem;
+}
+
+.settings-page .settings-status {
+    margin: 0;
+    font-size: .9rem;
+}
+
+.settings-page .settings-status[data-kind="ok"] {
+    color: #1E7A4C;
+}
+
+.settings-page .settings-status[data-kind="error"] {
+    color: #B42318;
+}
+
+.coming-soon {
+    display: inline-block;
+    margin-right: .35rem;
+    padding: .05rem .5rem;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: .75rem;
+    font-weight: 600;
+}
+
+.danger-zone {
+    border-color: #F1C4C0;
+}
+
+.danger-zone h2 {
+    color: #B42318;
+}
+
+.field-error {
+    margin: .3rem 0 0;
+    color: #B42318;
+    font-size: .85rem;
+}
+
+.field-error:empty {
+    display: none;
+}
+
+.back-link {
+    text-decoration: none;
+}
+
+@media (max-width: 640px) {
+    .settings-section {
+        padding: 1rem;
+    }
+}

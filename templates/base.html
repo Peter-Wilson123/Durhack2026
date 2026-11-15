@@ -54,6 +54,9 @@
 			<ul class="site-menu-links">
 				<li><a href="/">Home</a></li>
 				<li><a href="/u/">Account Info</a></li>
+				{% if current_user.is_authenticated %}
+				<li><a href="{{ url_for('settings.page') }}">Settings</a></li>
+				{% endif %}
 				{% if not current_user.is_authenticated %}
 				<li><a href="/register">Create Account</a></li>
 				{% endif %}

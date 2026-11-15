@@ -1,0 +1,128 @@
+{# AccountSettings: /settings. Four sections, each saved on its own.
+   Profile details use the SAME fields as profile edit mode (account/_fields.html).
+   Never shows the CIS code (users.username) or the sign-in email (users.email). #}
+{% extends "base.html" %}
+{% import "account/_fields.html" as fields with context %}
+
+{% block title %}Account settings · Superposition{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='settings.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+	<a class="back-link" href="{{ url_for('profiles.show', user_id=p.id) }}">← Back to your profile</a>
+	<h1 class="settings-title">Account settings</h1>
+
+	{# 1. Profile details #}
+	<form class="settings-section" id="details-form" data-section="details" novalidate aria-labelledby="details-title">
+		<h2 id="details-title">Profile details</h2>
+		<div class="settings-fields">
+			<div>{{ fields.name_field(p, "set") }}</div>
+			<div>{{ fields.year_field(p, "set") }}</div>
+			<div>{{ fields.colour_field(p, "set") }}</div>
+			<fieldset>
+				<legend class="settings-legend">Contact <span class="optional">all optional · only connections see these</span></legend>
+				{{ fields.contact_fields(p, "set") }}
+			</fieldset>
+		</div>
+		<div class="settings-actions">
+			<button class="btn btn-primary" type="submit">Save profile details</button>
+			<p class="settings-status" role="status" aria-live="polite"></p>
+		</div>
+	</form>
+
+	{# 2. Account #}
+	<section class="settings-section" aria-labelledby="account-title">
+		<h2 id="account-title">Account</h2>
+
+		<div class="settings-fields">
+			<div>
+				<label class="form-label" for="set-handle">Handle</label>
+				<div class="input-group">
+					<span class="input-group-text">@</span>
+					<input class="form-control" id="set-handle" pattern="[a-z0-9_]{3,20}" minlength="3" maxlength="20"
+						autocomplete="off" disabled aria-describedby="handle-help">
+				</div>
+				{# TODO(backend): no handle column, availability check or update endpoint #}
+				<p class="form-text" id="handle-help">
+					<span class="coming-soon">Coming soon</span>
+					Handles (a–z, 0–9 and _, 3 to 20 characters) will give your profile a link of its own.
+					Changing your handle will change your profile link.
+				</p>
+			</div>
+
+			<div>
+				<p class="form-label mb-1">Durham verification</p>
+				{# TODO(backend): no verified flag, so the "Verified Durham student" badge can't be shown truthfully #}
+				<p class="form-text mb-0"><span class="coming-soon">Coming soon</span>
+					A “Verified Durham student” badge will show here once the backend records verification.</p>
+			</div>
+		</div>
+
+		<div class="settings-actions">
+			<a class="btn btn-outline-secondary" href="{{ url_for('logout') }}">Sign out</a>
+		</div>
+	</section>
+
+	{# 3. Privacy #}
+	<form class="settings-section" id="privacy-form" data-section="privacy" novalidate aria-labelledby="privacy-title">
+		<h2 id="privacy-title">Privacy</h2>
+		<div class="settings-fields">
+			<div class="form-check form-switch">
+				<input class="form-check-input" type="checkbox" role="switch" id="set-show-year" name="show_year"
+					{% if p.show_year %}checked{% endif %} {% if not p.year %}disabled{% endif %} aria-describedby="show-year-help">
+				<label class="form-check-label" for="set-show-year">Show my year</label>
+				<p class="form-text" id="show-year-help">
+					{% if p.year %}Your year ({{ p.year }}) is shown on your profile when this is on.
+					{% else %}Choose your year in Profile details first.{% endif %}
+				</p>
+			</div>
+
+			<div class="form-check form-switch">
+				{# TODO(backend): no discoverability setting yet #}
+				<input class="form-check-input" type="checkbox" role="switch" id="set-discoverable" checked disabled
+					aria-describedby="discoverable-help">
+				<label class="form-check-label" for="set-discoverable">Show me on interest pages</label>
+				<p class="form-text" id="discoverable-help"><span class="coming-soon">Coming soon</span>
+					For now everyone who adds an interest is listed on its page.</p>
+			</div>
+
+			<div>
+				<p class="form-label mb-1">Bio</p>
+				<p class="form-text mb-0" id="bio-visibility-status">
+					{% if p.bio and p.bio_published %}Published: all verified Durham students can see it.
+					{% elif p.bio %}Draft: only you can see it.
+					{% else %}You haven't written a bio.{% endif %}
+					<a href="{{ url_for('profiles.show', user_id=p.id, edit=1) }}">{{ "Publish or unpublish it on your profile" if p.bio else "Write one on your profile" }}</a>
+				</p>
+			</div>
+		</div>
+		<div class="settings-actions">
+			<button class="btn btn-primary" type="submit">Save privacy</button>
+			<p class="settings-status" role="status" aria-live="polite"></p>
+		</div>
+	</form>
+
+	{# 4. Danger zone #}
+	<section class="settings-section danger-zone" aria-labelledby="danger-title">
+		<h2 id="danger-title">Danger zone</h2>
+		<p>Deleting your account removes your profile, bio, contact details, interests list and connections.
+			Interests you created stay on the site for others. This can't be undone.</p>
+		{# TODO(backend): no account deletion endpoint. When it exists, ask the person to type
+		   their handle to confirm, then call it. #}
+		<label class="form-label" for="delete-confirm">Type your handle to confirm</label>
+		<input class="form-control mb-3" id="delete-confirm" disabled autocomplete="off">
+		<button class="btn btn-outline-danger" type="button" disabled aria-describedby="delete-soon">Delete my account</button>
+		<p class="form-text" id="delete-soon"><span class="coming-soon">Coming soon</span> Account deletion isn't available yet.</p>
+	</section>
+</div>
+{{ fields.saved_values(p) }}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='account.js') }}"></script>
+<script src="{{ url_for('static', filename='settings.js') }}"></script>
+{% endblock %}
