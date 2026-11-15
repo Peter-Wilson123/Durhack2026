@@ -51,6 +51,10 @@
 }
 
 .panel-inner {
+    /* position: relative so absolutely positioned children (the screen-reader-only
+       labels in the pills) are clipped too; otherwise a closed panel's labels
+       stretch the page and leave empty space below the footer */
+    position: relative;
     min-height: 0;
     overflow: hidden;
     /* room for focus rings and hover lift inside the clipped area */

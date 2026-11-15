@@ -102,7 +102,9 @@
 		{% endblock %}
 	</main>
 
-	{# Footer: on every page, in normal flow after the content (never fixed or sticky) #}
+	{# Footer: on every page, in normal flow. The body is a full-height column and <main>
+	   grows to fill it, so on short pages the footer meets the bottom of the screen;
+	   on long pages it comes after the content. Never fixed or sticky. #}
 	<footer class="site-footer">
 		<p><span class="site-footer-name">Durham Superposition</span> © 2026</p>
 		<p>Not affiliated with Durham University.</p>
