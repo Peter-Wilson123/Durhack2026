@@ -53,6 +53,7 @@ def api_tags():
 # ---------- Creating and viewing interests ----------
 
 @bp.post("/interests/new")
+@flask_login.login_required
 def create_interest():
 	name = " ".join(flask.request.form.get("interest_name", "").split())[:120]
 	description = flask.request.form.get("description", "").strip()
