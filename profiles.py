@@ -164,3 +164,25 @@ def init_app(app):
 	# Site-wide 404/500 pages in the shared layout (site_pages.py)
 	import site_pages
 	site_pages.init_app(app)
+
+
+# Add to profiles.py
+
+@bp.get("/connections")
+def my_connections():
+    return flask.redirect(
+        flask.url_for("profiles.connections", user_id=flask_login.current_user.user_id)
+    )
+
+
+@bp.get("/u/<int:user_id>/connections")
+def connections(user_id):
+    try:
+        data = profile_api.get_connections(user_id, flask_login.current_user)
+    except profile_api.ProfileNotFound:
+        return _error("missing", 404)
+    except SQLAlchemyError:
+        flask.current_app.logger.exception("Connections lookup failed")
+        return _error("unavailable", 503)
+
+    return flask.render_template("profile/connections.html", c=data)

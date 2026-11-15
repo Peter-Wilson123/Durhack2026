@@ -34,10 +34,11 @@
 	</div>
 
 	<div class="profile-side">
-		<p class="profile-stat">
-			<strong>{{ p.connection_count }}</strong>
-			<span>{{ "Connection" if p.connection_count == 1 else "Connections" }}</span>
-		</p>
+		<a class="profile-stat" href="{{ url_for('profiles.connections', user_id=p.id) }}"
+           aria-label="View {{ p.connection_count }} {{ 'connection' if p.connection_count == 1 else 'connections' }}">
+            <strong>{{ p.connection_count }}</strong>
+            <span>{{ "Connection" if p.connection_count == 1 else "Connections" }}</span>
+        </a>
 		{% if owner %}
 		<button type="button" class="btn btn-outline-primary btn-sm view-only" data-action="edit">Edit profile</button>
 		<a class="preview-link view-only" href="{{ url_for('profiles.show', user_id=p.id, **{'as': 'other'}) }}">Preview as others see me</a>
