@@ -258,8 +258,8 @@
 		if (input.value.trim() !== q) return;
 		if (data === null) { showError(() => runSearch(input.value)); return; }
 
-		// TEMPORARY FALLBACK: /api/discover still groups by tag, so regroup by category
-		// here (see static/groupResults.js and docs/search-ranking-spec.md)
+		// /api/discover groups by tag; regroup by each interest's own category and score
+		// (static/groupResults.js; see docs/search-ranking-spec.md)
 		const boxes = GroupResults.groupByCategory(GroupResults.flattenTagGroups(data.groups, categoryOf));
 		showResults(q, boxes);
 	}

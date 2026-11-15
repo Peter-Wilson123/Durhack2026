@@ -37,27 +37,25 @@
 			.sort((a, b) => b.best_score - a.best_score || a.category.localeCompare(b.category));
 	}
 
-	// TEMPORARY FALLBACK (see docs/search-ranking-spec.md): the real /api/discover
-	// returns tag groups [{ categories, interests: [{ id, name, url }] }] with no
-	// score and no category per interest. This turns them into flat results:
-	//  - score comes from position (earlier group, earlier in group = better),
-	//    because the backend sorts by its own score but doesn't send it
-	//  - category is the group's first category that categoryOf() knows, else "other",
-	//    because the backend doesn't send each interest's own category
-	// It cannot rank name matches above tag matches by itself. Remove it once the
-	// backend sends [{ category, best_score, interests: [{ …, score }] }].
+	// Turn /api/discover's groups [{ categories, interests: [{ id, name, url, category?, score? }] }]
+	// into flat results for groupByCategory().
+	//  - category: the interest's OWN category from the backend, mapped to a group by
+	//    categoryOf(); "other" if it has none (untagged)
+	//  - score: the backend's match score
+	// FALLBACK (marked, for older responses without those fields): use the tag group's
+	// first known category, and a score from position (earlier = better).
 	function flattenTagGroups(groups, categoryOf) {
 		const out = [];
 		groups.forEach((g, gi) => {
-			const known = (g.categories || []).map(categoryOf).find(Boolean);
-			const category = known || "other";
+			const groupCategory = (g.categories || []).map(categoryOf).find(Boolean) || "other";
 			g.interests.forEach((item, ii) => {
+				const hasOwn = "category" in item;
 				out.push({
 					id: item.id,
 					name: item.name,
 					url: item.url,
-					category,
-					score: (groups.length - gi) * 1000 - ii,  // keeps the backend's order
+					category: hasOwn ? (categoryOf(item.category) || "other") : groupCategory,
+					score: typeof item.score === "number" ? item.score : (groups.length - gi) * 1000 - ii,
 				});
 			});
 		});
