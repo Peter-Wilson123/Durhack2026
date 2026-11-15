@@ -55,12 +55,6 @@ def account():
 	return flask.render_template("account.html")
 
 
-@app.get("/create_interest")
-@flask_login.login_required
-def create_interest():
-	return flask.render_template("create_interest.html")
-
-
 # LOGIN #
 
 @app.get("/login")
