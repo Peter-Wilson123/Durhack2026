@@ -1,4 +1,5 @@
 from sqlalchemy import func, select
+from interest_names import to_interest_title_case
 from models import Interest, User, UserInterest, db
 
 
@@ -38,7 +39,7 @@ def update_user_account(
         )
         if interest is None:
             interest = Interest(
-                interest_name=name,
+                interest_name=to_interest_title_case(name),  # same rules as the create form
                 created_by_user_id=user.user_id,
             )
             db.session.add(interest)

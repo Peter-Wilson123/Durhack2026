@@ -75,5 +75,40 @@ class BackendChangesTest(unittest.TestCase):
 			self.assertIsInstance(item["score"], (int, float))
 
 
+class InterestTitleCaseTest(unittest.TestCase):
+	"""New interest names are saved in title case, and duplicates ignore case."""
+
+	NAMES = ("Zz Rock-Climbing Gym of the North", "Zz Typed Hobby")
+
+	def setUp(self):
+		self.client = app.test_client()
+		self.client.post("/login", data={"identifier": "alex", "password": "password123"})
+
+	def tearDown(self):
+		with app.app_context():
+			for interest in Interest.query.filter(Interest.interest_name.in_(self.NAMES)).all():
+				db.session.delete(interest)
+			db.session.commit()
+
+	def test_create_saves_title_case(self):
+		self.client.post("/interests/new", data={"interest_name": "  zz rock-climbing   gym of the north "})
+		with app.app_context():
+			self.assertIsNotNone(Interest.query.filter_by(interest_name="Zz Rock-Climbing Gym of the North").first())
+
+	def test_duplicate_check_ignores_case(self):
+		with app.app_context():
+			existing = Interest.query.first()
+			before = Interest.query.count()
+		response = self.client.post("/interests/new", data={"interest_name": existing.interest_name.lower()})
+		self.assertTrue(response.headers["Location"].endswith(f"/interests/{existing.interest_id}"))
+		with app.app_context():
+			self.assertEqual(Interest.query.count(), before)
+
+	def test_update_account_new_name_is_title_case(self):
+		self.client.post("/update-account", data={"new-interests": "zz typed hobby"})
+		with app.app_context():
+			self.assertIsNotNone(Interest.query.filter_by(interest_name="Zz Typed Hobby").first())
+
+
 if __name__ == "__main__":
 	unittest.main()

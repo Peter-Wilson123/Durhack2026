@@ -14,6 +14,7 @@ import discovery
 import home_api
 import interest_api
 import taxonomy
+from interest_names import to_interest_title_case
 from models import Category, Interest, Tag, db
 
 MAX_TAGS = 10
@@ -55,7 +56,8 @@ def api_tags():
 @bp.post("/interests/new")
 @flask_login.login_required
 def create_interest():
-	name = " ".join(flask.request.form.get("interest_name", "").split())[:120]
+	# Title case, the same rules as the create form (interest_names.py)
+	name = to_interest_title_case(flask.request.form.get("interest_name", ""))[:120]
 	description = flask.request.form.get("description", "").strip()
 	tag_names = flask.request.form.getlist("tags")[:MAX_TAGS]
 

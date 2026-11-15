@@ -33,7 +33,7 @@
 .home[data-state="search"],
 .home[data-state="results"],
 .home[data-state="create"] {
-    padding-top: 1rem;
+    padding-top: 1.75rem;  /* 1rem + the .75rem the sticky bar's padding used to add */
 }
 
 .home p {
@@ -110,16 +110,52 @@
     margin: 0 auto 1rem;
 }
 
+/* SearchBar (sticky): only the search box shows. The wrapper has no background,
+   padding or blur, and lets clicks through (pointer-events: none), so cards
+   scrolling underneath stay visible and clickable right up to the box. It sits
+   directly under the header, above the cards and below the menu (z-index 10). */
 .home[data-state="search"] .search-bar,
+.home[data-state="results"] .search-bar,
 .home[data-state="create"] .search-bar {
     position: sticky;
     top: var(--header-h);
-    padding: .75rem 0;
-    background: var(--page);
+    overflow: visible;  /* never clip the focus ring */
+    pointer-events: none;
 }
 
+/* The spacing the wrapper's padding used to give, now on the content instead */
+.home[data-state="search"],
+.home[data-state="results"],
+.home[data-state="create"] {
+    --search-gap: .75rem;
+}
+
+.home[data-state="search"] #explore,
+.home[data-state="results"] #explore,
+.home[data-state="create"] #create {
+    margin-top: var(--search-gap);
+}
+
+/* The search box itself: its own solid background, border, rounded corners and
+   shadow (tokens, so it works in both themes). It takes clicks again. */
 .search-field {
     position: relative;
+    pointer-events: auto;
+    border-radius: .75rem;
+}
+
+.home[data-state="search"] .search-field,
+.home[data-state="results"] .search-field,
+.home[data-state="create"] .search-field {
+    box-shadow: 0 6px 18px var(--shadow-soft);
+}
+
+.search-field .form-control {
+    background-color: var(--surface);
+}
+
+[data-theme="dark"] .search-field .form-control {
+    background-color: var(--surface-2);
 }
 
 .search-field .form-control {

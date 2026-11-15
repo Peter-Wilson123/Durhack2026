@@ -32,6 +32,7 @@
 	let isCreating = false;    // chose "Create a new interest"
 	let nameEdited = false;
 	let checkSimilar = () => {};  // replaced by setUpCreateForm() when the form exists
+	let updateNamePreview = () => {};  // likewise
 	let ignoreFocus = false;
 
 	// ---------- Small helpers ----------
@@ -324,6 +325,7 @@
 		$("create-title").textContent = query ? `No match for “${query}”. Create it?` : "Create an interest";
 		if (nameInput && !nameEdited) {
 			nameInput.value = query;
+			updateNamePreview();
 			checkSimilar();
 		}
 	}
@@ -440,10 +442,31 @@
 		const createStatus = $("create-status");
 		const submitButton = $("create-submit");
 
+		// The name as it will be saved: title case (static/titleCase.js), the same
+		// rules the backend applies. The duplicate check and the request use this.
+		const savedName = () => TitleCase.toInterestTitleCase(nameInput.value);
+
+		// NamePreview: "Will be saved as: Rock Climbing", updated while typing.
+		// The field itself is only rewritten on blur and submit, so the cursor never jumps.
+		const namePreview = $("interest-name-preview");
+		updateNamePreview = function () {
+			const name = savedName();
+			namePreview.hidden = !name;
+			namePreview.textContent = name ? `Will be saved as: ${name}` : "";
+		};
+
 		nameInput.addEventListener("input", () => {
 			nameEdited = true;
 			nameError.textContent = "";
+			updateNamePreview();
 			checkSimilarSoon();
+		});
+
+		// Leaving the field: show the converted name in it
+		nameInput.addEventListener("blur", () => {
+			const name = savedName();
+			if (name !== nameInput.value) nameInput.value = name;
+			updateNamePreview();
 		});
 
 		// Description counter
@@ -456,13 +479,15 @@
 		const fetchSimilar = latestFetcher();
 		let exactMatch = null;
 		checkSimilar = async function () {
-			const q = nameInput.value.trim();
+			const q = savedName();
 			const box = $("similar");
 			if (q.length < NAME_MIN) { box.hidden = true; exactMatch = null; return; }
 			const data = await fetchSimilar(`/api/interests?q=${encodeURIComponent(q)}`);
-			if (data === undefined || nameInput.value.trim() !== q) return;
-			const found = (data?.results || []).slice(0, 3);
-			exactMatch = found.find((i) => i.name.toLowerCase() === q.toLowerCase()) || null;
+			if (data === undefined || savedName() !== q) return;
+			const results = data?.results || [];
+			const found = results.slice(0, 3);
+			// Duplicate check ignores case: "astronomy" matches "Astronomy"
+			exactMatch = results.find((i) => i.name.toLowerCase() === q.toLowerCase()) || null;
 			$("similar-list").replaceChildren(...found.map((item) => {
 				const add = el("button", { type: "button", class: "btn btn-sm btn-outline-primary" }, "Add this instead");
 				add.setAttribute("aria-label", `Add ${item.name} to your interests instead`);
@@ -488,7 +513,7 @@
 
 		// Check the fields; returns true if the form can be sent
 		function validate() {
-			const name = nameInput.value.trim();
+			const name = savedName();
 			nameError.textContent = "";
 			if (name.length < NAME_MIN || name.length > NAME_MAX) {
 				nameError.textContent = `Give it a name of ${NAME_MIN} to ${NAME_MAX} characters.`;
@@ -507,6 +532,9 @@
 		// Create through POST /interests/new, add it to your profile, then open it
 		form.addEventListener("submit", async (event) => {
 			event.preventDefault();
+			// Send the converted name (the backend converts it again, so this can't be skipped)
+			nameInput.value = savedName();
+			updateNamePreview();
 			if (!validate()) return;
 			submitButton.disabled = true;
 			createStatus.textContent = "Creating…";
@@ -514,7 +542,7 @@
 				const response = await fetch(form.action, { method: "POST", body: new FormData(form) });
 				// The backend answers with a redirect to the new interest's page
 				if (!response.ok || !response.url.includes("/interests/")) throw new Error(response.status);
-				await addToMyInterests(nameInput.value.trim());
+				await addToMyInterests(savedName());
 				createStatus.textContent = "Created. Opening it…";
 				window.location.href = response.url;
 			} catch {
