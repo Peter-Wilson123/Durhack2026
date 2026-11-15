@@ -245,10 +245,6 @@ body > main {
     color: var(--accent-text);
 }
 
-.site-header .icon-btn:last-child {
-    justify-self: end;
-}
-
 /* Wordmark: "Superposition", top-left, linking home. Never wraps. */
 .brand {
     justify-self: start;
@@ -311,26 +307,23 @@ body > main {
     border-top: 1px solid var(--line);
 }
 
-/* The theme switch, then Log out to its right: never wraps */
-.site-menu-row {
+/* HeaderActions: theme switch, then Log in / Log out, on one line at the right */
+.header-actions {
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
+    justify-self: end;
     gap: .5rem;
 }
 
-.site-menu-row > :last-child {
-    flex: 1;
-    min-width: 0;
-}
-
+/* ThemeToggle: round icon button in the top bar */
 .theme-toggle {
     display: inline-flex;
     flex: none;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border: 1px solid var(--line);
     border-radius: 50%;
     background: var(--surface);
