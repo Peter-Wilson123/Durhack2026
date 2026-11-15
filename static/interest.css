@@ -48,14 +48,27 @@
     margin-bottom: 2rem;
 }
 
+/* Title on the left; the actions (with the "+" / tick button last) on the right,
+   level with the title. On narrow screens the title wraps; the button never shrinks. */
 .interest-title-row {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: .75rem 1rem;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.interest-actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: .75rem;
+    margin-left: auto;
 }
 
 .interest-name {
+    flex: 1 1 auto;
+    min-width: 0;
     margin: 0;
     color: var(--cat-fg);
     font-size: clamp(2rem, 5vw, 3rem);
@@ -99,10 +112,6 @@
     opacity: .6;
 }
 
-.interest-edit {
-    margin-left: auto;
-}
-
 .interest-edit-note {
     margin: .5rem 0 0;
     color: var(--muted) !important;
@@ -112,6 +121,15 @@
 .interest-toggle-label {
     color: var(--muted);
     font-size: .9rem;
+    white-space: nowrap;
+}
+
+/* Phones: the caption beside the button would squeeze the title, so only the
+   button shows (its aria-label still says "Add to my interests"). */
+@media (max-width: 479.98px) {
+    .interest-toggle-label {
+        display: none;
+    }
 }
 
 .interest-category {
