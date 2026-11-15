@@ -104,6 +104,13 @@ def register():
 		if password != confirm_password:
 			return flask.render_template("register.html")
 
+		# Durham students only: the address must be a Durham one
+		if not email.lower().endswith("@durham.ac.uk"):
+			return flask.render_template(
+				"register.html",
+				error="This site is for Durham students only. Please use your student @durham.ac.uk address.",
+			)
+
 		if auth.is_user(email, username):
 			return flask.render_template("register.html")
 
