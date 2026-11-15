@@ -22,17 +22,8 @@ def update_user_account(
     remove_interests: str = "",
 ) -> None:
     """Updates a user's username, bio, and UserInterest links in SQLite."""
-    # 1. Update username if provided, changed, and not already taken
-    clean_username = (new_username or "").strip().lower()[:50]
-    if clean_username and clean_username != user.username:
-        existing_user = db.session.scalar(
-            select(User).where(
-                func.lower(User.username) == clean_username,
-                User.user_id != user.user_id,
-            )
-        )
-        if not existing_user:
-            user.username = clean_username
+    # 1. The username is the CIS code people sign in with, so it can't be changed
+    #    here (new_username is ignored). Display names are edited on the profile.
 
     # 2. Update bio only if the user typed something (leaves current bio intact if blank)
     clean_bio = (new_bio or "").strip()
