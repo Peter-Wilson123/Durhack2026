@@ -502,6 +502,13 @@ body:has(.profile-body[data-editing="true"]) {
     padding-bottom: 5.5rem;
 }
 
+/* On phones the bar wraps onto two lines, so it needs more room */
+@media (max-width: 639.98px) {
+    body:has(.profile-body[data-editing="true"]) {
+        padding-bottom: 7.5rem;
+    }
+}
+
 .header-fields {
     display: grid;
     gap: .5rem;

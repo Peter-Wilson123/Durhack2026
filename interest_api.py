@@ -30,8 +30,8 @@ A user card has ONLY these fields (privacy: nothing else is ever loaded):
 	id, url        user_id, until the backend has a public handle
 	handle         None: TODO(backend) username is the CIS code, never shown
 	display_name   users.display_name, else "Durham student"
-	avatar_colour  TODO(backend) palette fallback, same as the profile page
-	year           None: TODO(backend) no year column
+	avatar_colour  users.avatar_colour, else the palette fallback (same as the profile page)
+	year           users.year, only when users.show_year is on; else None
 	wave_state     "none" | "sent" | "received" | "connected"
 """
 
@@ -99,7 +99,7 @@ def get_people(interest_id, viewer, page=1, cumulative=False):
 	# Only the columns a card may show. The viewer is left out here, on the
 	# server (TODO(backend): the backend should do this, and skip opted-out users).
 	rows = db.session.execute(
-		select(User.user_id, User.display_name)
+		select(User.user_id, User.display_name, User.year, User.show_year, User.avatar_colour)
 		.join(UserInterest, UserInterest.user_id == User.user_id)
 		.where(UserInterest.interest_id == interest_id, User.user_id != viewer.user_id)
 		.order_by(UserInterest.added_at.desc(), User.user_id)
@@ -111,22 +111,25 @@ def get_people(interest_id, viewer, page=1, cumulative=False):
 	rows = rows[:wanted]
 	waves = _wave_states(viewer.user_id, [r.user_id for r in rows])
 	return {
-		"people": [to_user_card(r.user_id, r.display_name, waves.get(r.user_id, "none")) for r in rows],
+		"people": [to_user_card(r, waves.get(r.user_id, "none")) for r in rows],
 		"shown": start + len(rows),
 		"has_more": has_more,
 		"next_page": page + 1,
 	}
 
 
-def to_user_card(user_id, display_name, wave_state):
-	"""Map backend user columns to a public user card. Never add private fields here."""
+def to_user_card(row, wave_state):
+	"""
+	Map one row of user columns (user_id, display_name, year, show_year,
+	avatar_colour) to a public user card. Never add private fields here.
+	"""
 	return {
-		"id": user_id,
-		"url": f"/u/{user_id}",
+		"id": row.user_id,
+		"url": f"/u/{row.user_id}",
 		"handle": None,  # TODO(backend): no public handle
-		"display_name": (display_name or "").strip() or FALLBACK_NAME,
-		"avatar_colour": User.avatar_colour,
-		"year": User.year,
+		"display_name": (row.display_name or "").strip() or FALLBACK_NAME,
+		"avatar_colour": row.avatar_colour or fallback_avatar(row.user_id),
+		"year": row.year if row.show_year else None,  # only when they chose to show it
 		"wave_state": wave_state,
 	}
 

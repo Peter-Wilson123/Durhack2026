@@ -89,9 +89,24 @@
     color: blue;
 }
 
+/* PageLayout: the body is a full-height column (dvh, so mobile address bars
+   leave no gap). <main> grows to fill it, so on a short page the footer meets
+   the bottom of the screen; on a long page it simply follows the content.
+   The footer itself is never fixed, sticky or absolute. */
 body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0;
     background: var(--page);
     color: var(--ink);
+}
+
+body > main {
+    flex: 1 0 auto;
+    width: 100%;
+    padding-bottom: 2rem;  /* space between the content and the footer */
 }
 
 .btn-primary {
@@ -230,10 +245,6 @@ body {
     color: var(--accent-text);
 }
 
-.site-header .icon-btn:last-child {
-    justify-self: end;
-}
-
 /* Wordmark: "Superposition", top-left, linking home. Never wraps. */
 .brand {
     justify-self: start;
@@ -296,26 +307,23 @@ body {
     border-top: 1px solid var(--line);
 }
 
-/* The theme switch, then Log out to its right: never wraps */
-.site-menu-row {
+/* HeaderActions: theme switch, then Log in / Log out, on one line at the right */
+.header-actions {
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
+    justify-self: end;
     gap: .5rem;
 }
 
-.site-menu-row > :last-child {
-    flex: 1;
-    min-width: 0;
-}
-
+/* ThemeToggle: round icon button in the top bar */
 .theme-toggle {
     display: inline-flex;
     flex: none;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border: 1px solid var(--line);
     border-radius: 50%;
     background: var(--surface);
@@ -381,8 +389,9 @@ body {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
+    flex-shrink: 0;
     gap: .25rem 1.5rem;
-    margin-top: 2rem;
+    margin-top: auto;
     padding: 1.5rem 1rem;
     border-top: 1px solid var(--line);
     background: var(--surface);
