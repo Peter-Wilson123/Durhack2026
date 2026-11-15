@@ -15,8 +15,10 @@
 	</div>
 
 	{% if p.viewer_relation == "self" %}
+	{% from "account/_fields.html" import saved_values %}
+	{{ saved_values(p) }}
 	{# EditBar: sticky while editing. Interests and the bio save straight away with their own
-	   buttons, so this only leaves edit mode (warning first if the bio isn't published). #}
+	   buttons; "Done" saves the name, year, colour and contact fields, then leaves edit mode. #}
 	<div class="edit-bar edit-only" role="region" aria-label="Editing your profile">
 		<p class="edit-bar-status" id="edit-status" role="status" aria-live="polite">Editing your profile</p>
 		<div class="edit-bar-actions">

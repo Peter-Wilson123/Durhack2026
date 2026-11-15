@@ -1,8 +1,9 @@
 {# ProfileHeader: avatar, name, year, connection count, and the owner's actions.
-   In edit mode the owner sees inputs here instead (the ones the backend can't save yet
-   are disabled and say so). #}
+   In edit mode the owner sees inputs here instead (shared with Account settings:
+   templates/account/_fields.html). They are saved when "Done" is pressed. #}
 {% from "profile/_avatar.html" import avatar with context %}
 {% from "profile/_badge.html" import only_you %}
+{% import "account/_fields.html" as fields with context %}
 {% set owner = p.viewer_relation == "self" %}
 <header class="profile-header">
 	{{ avatar(p.avatar_colour, "lg") }}
@@ -20,33 +21,14 @@
 		</div>
 
 		{% if owner %}
-		<fieldset class="edit-only header-fields" aria-describedby="header-fields-note">
+		<fieldset class="edit-only header-fields" id="header-fields">
 			<legend class="visually-hidden">Name, year and avatar colour</legend>
 			<h1 class="visually-hidden">{{ p.display_name }}</h1>
-			<label class="form-label" for="edit-name">Display name</label>
-			<input class="form-control form-control-lg" id="edit-name" value="{{ p.display_name if p.has_display_name else '' }}"
-				placeholder="{{ p.display_name }}" maxlength="{{ NAME_MAX }}" disabled>
+			{{ fields.name_field(p, "edit", large=true) }}
 			<div class="header-fields-row">
-				<div>
-					<label class="form-label" for="edit-year">Year</label>
-					<select class="form-select" id="edit-year" disabled>
-						{% for y in YEARS %}<option {% if p.show_year and p.year == y %}selected{% endif %}>{{ y }}</option>{% endfor %}
-						<option {% if not p.show_year %}selected{% endif %}>Don't show</option>
-					</select>
-				</div>
-				<div>
-					<span class="form-label d-block" id="edit-colour-label">Avatar colour</span>
-					<div class="swatches" role="radiogroup" aria-labelledby="edit-colour-label">
-						{% for key, (label, hex) in AVATAR_COLOURS.items() %}
-						<label class="swatch" style="--swatch: {{ hex }}">
-							<input type="radio" name="avatar_colour" value="{{ key }}" {% if p.avatar_colour == key %}checked{% endif %} disabled>
-							<span class="visually-hidden">{{ label }}</span>
-						</label>
-						{% endfor %}
-					</div>
-				</div>
+				<div>{{ fields.year_field(p, "edit") }}</div>
+				<div>{{ fields.colour_field(p, "edit") }}</div>
 			</div>
-			<p class="field-note" id="header-fields-note">Name, year and avatar colour can't be saved yet: the backend has no place to store them.</p>
 		</fieldset>
 		{% endif %}
 	</div>
