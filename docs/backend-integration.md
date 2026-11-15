@@ -470,3 +470,132 @@ Sign in as `alex@uni.ac.uk` with the password `password123`.
 | Create | Search for something that doesn't exist → **Create it?** Try the name `Astrophotography` first to see "Did you mean…". You land on the new interest, already added. |
 | Creator vs others | The creator sees a disabled **Edit**. Sign in as `maya@uni.ac.uk`: no Edit button. |
 | Home | See the manual test above. |
+
+---
+
+# Account settings, homepage states and category search (15 Nov 2026, `main` at `c979f1c`)
+
+The backend is still Flask + SQLite (there is no FastAPI, Postgres, pgvector or
+`/openapi.json`). **New since the last section (Peter, `a6b3d08`):** user columns
+`year`, `show_year`, `avatar_colour`, `bio_published`, `contact_instagram`,
+`contact_x`, `contact_email`, and `POST /u/<id>/edit` in `profiles.py`.
+
+## Endpoints found
+
+| Method | Path | Request | Response | Auth | Used for |
+|---|---|---|---|---|---|
+| POST | `/u/<id>/edit` | form: `display_name`, `year` (one of the years, or `hide`), `avatar_colour`, `bio`, `instagram`, `x`, `email`, `action` (`save` / `publish` / `unpublish`) | 302 → `/u/<id>` (save) or → `/u/<id>?edit=1` (publish/unpublish); 403 if not yours | login (via the blueprint) | Settings → Profile details and Privacy; profile edit mode |
+| GET | `/logout` | – | 302 → `/login` | – | Settings → Sign out |
+| GET | `/api/discover?q=` | – | `{query, nameMatches, groups: [{key, title, categories[], interests: [{id, name, url, tags[]}]}]}`: grouped **by tag** | none | Homepage results (regrouped by category in the browser) |
+| GET | `/api/interests?q=` | – | `{results: [{id, name, url, tags[]}]}`: name contains `q` | none | Name dropdown under the search box |
+
+**How `POST /u/<id>/edit` behaves (important):**
+- It sets **every** field from the form each time. A missing field is saved as empty, so the frontend always sends all saved values (`static/account.js`).
+- Saving a *changed* bio with `action=save` turns it into an unpublished draft. Settings and profile edit mode always send the last saved bio, so they never unpublish it by accident.
+- `year=hide` keeps the stored year but sets `show_year` false.
+- There is **no** handle field, change limit or availability check.
+- It returns a redirect, never a JSON error.
+
+**Not found:**
+- a public handle, or an availability check for one;
+- a "verified Durham student" flag;
+- a discoverability ("Show me on interest pages") setting;
+- account deletion;
+- a search endpoint that returns each interest's **own category** or a **score**;
+- any Discover or recommendation endpoint other than the one-result `/find-new-interest` redirect.
+
+## Field mapping
+
+| Field needed | Endpoint + field | Status |
+|---|---|---|
+| display name (1–30, optional) | `POST /u/<id>/edit` `display_name` | ✓ (server trims to 30) |
+| year, incl. "Don't show" | `year` (`hide` hides it) | ✓ |
+| avatar colour | `avatar_colour` (keys in `colours.AVATAR_COLOURS`) | ✓ |
+| contacts (Instagram, X, email) | `instagram`, `x`, `email` | ✓ (no format check on the server) |
+| "Show my year" toggle | `year` = stored year, or `hide` | ✓ (shares the field with the year dropdown) |
+| bio published / draft | `action=publish` / `unpublish`; `users.bio_published` | ✓ |
+| handle (`a-z 0-9 _`, 3–20) | – | **MISSING**: field shown disabled, "Coming soon" |
+| handle availability check | – | **MISSING** |
+| handle change limit | – | **MISSING** |
+| "Verified Durham student" badge | – | **MISSING**: not shown, because nothing records verification |
+| discoverability toggle | – | **MISSING**: switch shown on and disabled, "Coming soon" |
+| delete account | – | **MISSING**: button disabled, "Coming soon" |
+| sign out | `GET /logout` | ✓ |
+| search: each interest's own category | – (`/api/discover` gives categories per **tag group**) | **MISSING**: temporary fallback (below) |
+| search: score per interest | – | **MISSING**: temporary fallback uses the order of the response |
+| homepage carousel | `discovery.suggested_names(16)`, passed by `app.py` `home()` as `chips` | ✓ (restored) |
+
+## What the frontend does with each gap (temporary, marked `TODO(backend)` in code)
+
+- **Handle, verification, discoverability, deletion:** shown on `/settings` but switched off, each labelled "Coming soon". No fake data, and nothing is sent.
+- **Search categories and scores:** `flattenTagGroups()` in `static/groupResults.js` (clearly marked as a fallback):
+  - It turns the tag groups into a flat list. It ranks by **position** (earlier group, then earlier in the group), which follows the backend's own ordering.
+  - It gives each interest the category of the **tag group it arrived in**, not its own category. So an interest can land in the wrong box (for example, "print" puts some printing interests under Recreation).
+  - It **cannot** rank name matches above tag matches by itself.
+  - `groupByCategory()` then builds the boxes. That part is final and unit-tested.
+- **"Matching names" box:** the backend still sends a `__matches` group for name matches that no tag could place. The frontend no longer shows it as its own box: those interests are regrouped like any other, so untagged ones land in a grey "Other" box.
+
+## Gaps for Craig and Peter (this round)
+
+1. **Search response by category** (`docs/search-ranking-spec.md`): each interest's own category and a score, ideally already grouped and sorted. Then delete `flattenTagGroups()`.
+2. **Handle:** a `handle` column (unique, `a-z 0-9 _`, 3–20), an availability check (`GET /api/handles/<handle>` → `{available}`), and an update with any change limit returning a readable error. Profile URLs could then use it instead of the user id.
+3. **Verification flag**, so the "Verified Durham student" badge can be shown truthfully.
+4. **Discoverability:** a `discoverable` column, applied **on the server** when listing an interest's people (`interest_api.get_people`).
+5. **Account deletion** endpoint (with cascade rules for connections, interests list and messages; decide what happens to interests the user created).
+6. **`POST /u/<id>/edit`:**
+   - accept partial updates (only the fields sent), or document that every field is required;
+   - validate contact formats;
+   - return JSON errors instead of only redirecting.
+7. Still open from earlier rounds:
+   - any password signs in;
+   - `/update-account` can change the CIS-code username;
+   - `POST /interests/new` needs no sign-in;
+   - no CSRF protection, which now also covers `POST /u/<id>/edit`.
+
+## PRIVACY CHECK (this round, verified on a seeded copy)
+
+- **Contacts:** withheld **by the server** for non-connections. As Maya and Liam (connections), Alex's profile HTML contains his contacts. As Priya and Sam (not connected), it doesn't. Pages are server-rendered, so the HTML response is what the Network tab shows.
+- **Hidden year:** not in the HTML for other students when "Show my year" is off.
+- **Owner-only data:** the `profile-saved` JSON (used for saving) is only on your own profile and `/settings`.
+- **CIS code and sign-in email:** neither appears on `/settings`, profiles or search responses.
+- **Search JSON:** `/api/discover` and `/api/interests` still send `tags[]`. The page never shows them, but they're visible in the Network tab. Tags aren't personal data.
+- No PRIVACY BUG found this round.
+
+## SECURITY GAPS (this round)
+
+- **`POST /u/<id>/edit`** checks the owner on the server. Good. But it has no CSRF protection.
+- Everything in `static/account.js` and `static/settings.js` is only for friendly messages; the server is the authority.
+- Earlier gaps 1–6 above are unchanged.
+
+## Testing this round locally
+
+```bash
+python testdata.py
+```
+
+```bash
+python app.py
+```
+
+```bash
+python -m unittest tests.test_home
+```
+
+```bash
+node --test tests/test_group_results.js
+```
+
+Sign in as `alex` / `password123` (seed data).
+
+| Test | Steps | Expected |
+|---|---|---|
+| Resting | Open `/` | Heading, two scrolling rows of interests, and Browse / Add an interest / Sign in (or Your profile) |
+| Search mode | Click the search box | The 10 category cards, each with 3–4 random interests |
+| Pills still work | Click a pill in a card | Opens that interest (the view doesn't collapse first) |
+| Typing | Type `club` | Boxes by category, best match first; "N interests in M categories" is announced |
+| Tag-only match | Type `botany` | Interests whose names don't say botany (e.g. Foraging and Mycology); no tags visible |
+| Empty | Type `zzqxv` | "No matches yet. Try a broader word." with "Create a new interest" (pre-filled) |
+| Clear by typing | Delete the text | Back to the category cards |
+| Escape / clear button / click outside | With an empty box | Back to resting |
+| Settings | Menu → Settings | Change name, colour or contacts → Save profile details → "Saved."; turn off "Show my year" → Save privacy; reload to confirm |
+| Profile edit | `/u/` → Edit profile → change year → Done | Saved and shown; Unpublish / Publish bio work |
