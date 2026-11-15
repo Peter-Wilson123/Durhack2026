@@ -123,11 +123,20 @@ class ContactListTest(unittest.TestCase):
 			self.saved = {c: getattr(user, c) for c in (
 				"display_name", "year", "show_year", "avatar_colour", "bio", "bio_published",
 				"contact_instagram", "contact_x", "contact_email")}
+			self.saved_rows = [(r.contact_type, r.value, r.label, r.position)
+				for r in UserContact.query.filter_by(user_id=1).all()]
+			# Start every test from the old columns only (no contact rows yet)
+			UserContact.query.filter_by(user_id=1).delete()
+			user.contact_instagram, user.contact_x, user.contact_email = (
+				"alex.mercer.durham", "alexmercer_cs", "alex.mercer@durham.ac.uk")
+			db.session.commit()
 
 	def tearDown(self):
 		# Put Alex back exactly as before
 		with app.app_context():
 			UserContact.query.filter_by(user_id=1).delete()
+			for kind, value, label, position in self.saved_rows:
+				db.session.add(UserContact(user_id=1, contact_type=kind, value=value, label=label, position=position))
 			user = db.session.get(User, 1)
 			for column, value in self.saved.items():
 				setattr(user, column, value)
