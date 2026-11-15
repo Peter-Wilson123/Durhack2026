@@ -19,7 +19,7 @@ get_profile(user_id, viewer, preview_as=None) returns:
 	bio               users.bio ("" for none; "" for others while unpublished)
 	bio_published     users.bio_published
 	connection_count  accepted rows in connections where the user is either side
-	contacts          {"instagram", "x", "email"} (only the ones set) for self and connections,
+	contacts          [{"id", "type", "value", "label"}] for self and connections (see _contacts),
 	                  None for everyone else (the template shows the locked card)
 	viewer_relation   "self" | "connection" | "other", worked out from connections
 	wave_status       "none" | "sent" | "received", from a pending connections row
@@ -34,7 +34,7 @@ from sqlalchemy.orm import selectinload
 
 import discovery
 from colours import AVATAR_COLOURS, category_slug, category_style
-from models import Connection, Interest, Tag, User, UserInterest, db
+from models import Connection, Interest, Tag, User, UserContact, UserInterest, db
 
 RELATIONS = ("self", "connection", "other")
 BIO_MAX = 160
@@ -96,13 +96,7 @@ def get_profile(user_id, viewer, preview_as=None):
 
 def to_profile(user):
     """Map a backend User row to the profile shape (fields everyone may see first)."""
-    contacts = {}
-    if user.contact_instagram:
-        contacts["instagram"] = user.contact_instagram
-    if user.contact_x:
-        contacts["x"] = user.contact_x
-    if user.contact_email:
-        contacts["email"] = user.contact_email
+    contacts = _contacts(user)
 
     return {
         "id": user.user_id,
@@ -119,6 +113,21 @@ def to_profile(user):
         "connection_count": _connection_count(user.user_id),
         "contacts": contacts,
     }
+
+
+def _contacts(user):
+	"""
+	[{id, type, value, label}] from user_contacts, in the user's order. A user
+	with no rows yet gets their older instagram / x / email columns as entries,
+	so values saved before the contact list existed still show.
+	"""
+	rows = db.session.scalars(
+		select(UserContact).where(UserContact.user_id == user.user_id).order_by(UserContact.position)
+	).all()
+	if rows:
+		return [{"id": r.contact_id, "type": r.contact_type, "value": r.value, "label": r.label} for r in rows]
+	legacy = [("instagram", user.contact_instagram), ("x", user.contact_x), ("email", user.contact_email)]
+	return [{"id": f"old-{kind}", "type": kind, "value": value, "label": None} for kind, value in legacy if value]
 
 
 def _interest(interest):

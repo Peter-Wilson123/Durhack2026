@@ -296,3 +296,21 @@ class DirectMessage(db.Model):
 	receiver = db.relationship(
 		"User", foreign_keys=[receiver_id], back_populates="received_messages"
 	)
+
+
+class UserContact(db.Model):
+	"""
+	One contact method a user shares with their connections (email, phone,
+	Discord, …). Validated by contact_types.py. The older users.contact_*
+	columns are kept and still read when a user has no rows here.
+	"""
+	__tablename__ = "user_contacts"
+
+	contact_id = db.Column(db.Integer, primary_key=True)
+	user_id = db.Column(
+		db.Integer, db.ForeignKey("users.user_id"), nullable=False, index=True
+	)
+	contact_type = db.Column(db.String(20), nullable=False)
+	value = db.Column(db.String(200), nullable=False)
+	label = db.Column(db.String(24), nullable=True)  # only for type "other"
+	position = db.Column(db.Integer, default=0, nullable=False)

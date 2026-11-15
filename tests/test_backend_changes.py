@@ -7,10 +7,12 @@ Run from the project folder (after `python testdata.py`):
 They use the local database (instance/app.db) and remove anything they create.
 """
 
+import json
 import unittest
 
+import profile_api
 from app import app
-from models import Interest, User, db
+from models import Interest, User, UserContact, db
 
 PASSWORD = "longpassword1"
 
@@ -108,6 +110,92 @@ class InterestTitleCaseTest(unittest.TestCase):
 		self.client.post("/update-account", data={"new-interests": "zz typed hobby"})
 		with app.app_context():
 			self.assertIsNotNone(Interest.query.filter_by(interest_name="Zz Typed Hobby").first())
+
+
+class ContactListTest(unittest.TestCase):
+	"""Typed contact lists: saving, validation, old values, and privacy."""
+
+	def setUp(self):
+		self.client = app.test_client()
+		self.client.post("/login", data={"identifier": "alex", "password": "password123"})
+		with app.app_context():
+			user = db.session.get(User, 1)
+			self.saved = {c: getattr(user, c) for c in (
+				"display_name", "year", "show_year", "avatar_colour", "bio", "bio_published",
+				"contact_instagram", "contact_x", "contact_email")}
+
+	def tearDown(self):
+		# Put Alex back exactly as before
+		with app.app_context():
+			UserContact.query.filter_by(user_id=1).delete()
+			user = db.session.get(User, 1)
+			for column, value in self.saved.items():
+				setattr(user, column, value)
+			db.session.commit()
+
+	def save(self, contacts):
+		s = self.saved
+		return self.client.post("/u/1/edit", data={
+			"display_name": s["display_name"] or "", "year": s["year"] if s["show_year"] else "hide",
+			"avatar_colour": s["avatar_colour"], "bio": s["bio"] or "", "action": "save",
+			"contacts": json.dumps(contacts),
+		})
+
+	def contacts_as(self, username):
+		client = app.test_client()
+		client.post("/login", data={"identifier": username, "password": "password123"})
+		with app.app_context():
+			viewer = User.query.filter_by(username=username).first()
+			return profile_api.get_profile(1, viewer)["contacts"]
+
+	def test_old_values_still_show_as_entries(self):
+		contacts = self.contacts_as("alex")
+		self.assertEqual({c["type"] for c in contacts}, {"instagram", "x", "email"})
+
+	def test_saves_a_typed_list_in_order(self):
+		entries = [
+			{"type": "email", "value": " alex.m@durham.ac.uk "},
+			{"type": "phone", "value": "+44 7700 900123"},
+			{"type": "discord", "value": "@Alex_M"},
+			{"type": "instagram", "value": "@alex.m"},
+			{"type": "other", "value": "Room 12, Collingwood", "label": "Find me"},
+		]
+		response = self.save(entries)
+		self.assertEqual(response.status_code, 302)
+		contacts = self.contacts_as("alex")
+		self.assertEqual([c["type"] for c in contacts], ["email", "phone", "discord", "instagram", "other"])
+		self.assertEqual(contacts[0]["value"], "alex.m@durham.ac.uk")  # trimmed
+		self.assertEqual(contacts[2]["value"], "alex_m")  # @ removed, lower case
+		self.assertEqual(contacts[4]["label"], "Find me")
+
+	def test_rejects_unsafe_and_invalid_values(self):
+		bad_lists = [
+			[{"type": "website", "value": "javascript:alert(1)"}],
+			[{"type": "website", "value": "data:text/html,hi"}],
+			[{"type": "website", "value": "http://example.com"}],
+			[{"type": "instagram", "value": "x" * 31}],
+			[{"type": "other", "value": "hello" + chr(7), "label": "Bell"}],  # control character
+			[{"type": "other", "value": "no label"}],
+			[{"type": "email", "value": "a@b.co"}, {"type": "email", "value": "A@B.co"}],
+			[{"type": "x", "value": f"user{n}"} for n in range(9)],
+			[{"type": "carrier-pigeon", "value": "coo"}],
+		]
+		for entries in bad_lists:
+			with self.subTest(entries=entries[:1]):
+				self.assertEqual(self.save(entries).status_code, 400)
+		# Nothing was saved by the rejected requests
+		with app.app_context():
+			self.assertEqual(UserContact.query.filter_by(user_id=1).count(), 0)
+
+	def test_strangers_get_no_contact_data(self):
+		self.save([{"type": "discord", "value": "alex_m"}])
+		self.assertIsNone(self.contacts_as("priya"))  # not connected to Alex
+		self.assertTrue(self.contacts_as("maya"))     # connected to Alex
+		other = app.test_client()
+		other.post("/login", data={"identifier": "priya", "password": "password123"})
+		html = other.get("/u/1").get_data(as_text=True)
+		self.assertNotIn("alex_m", html)
+		self.assertNotIn("discord", html.lower())
 
 
 if __name__ == "__main__":
