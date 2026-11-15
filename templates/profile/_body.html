@@ -18,7 +18,7 @@
 	{% if p.viewer_relation == "self" %}{% include "profile/_suggestions.html" %}{% endif %}
 
 	{% if p.viewer_relation == "self" %}
-	{% from "account/_fields.html" import saved_values %}
+	{% from "account/_fields.html" import saved_values with context %}
 	{{ saved_values(p) }}
 	{# EditBar: sticky while editing. Interests and the bio save straight away with their own
 	   buttons; "Done" saves the name, year, colour and contact fields, then leaves edit mode. #}

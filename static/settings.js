@@ -7,7 +7,7 @@
 	const privacyForm = document.getElementById("privacy-form");
 	const showYear = document.getElementById("set-show-year");
 	const showYearHelp = document.getElementById("show-year-help");
-	const DETAIL_FIELDS = ["display_name", "year", "avatar_colour", "instagram", "x", "email"];
+	const DETAIL_FIELDS = ["display_name", "year", "avatar_colour", "contacts"];
 
 	let saved = readSavedProfile();
 
@@ -70,9 +70,12 @@
 		const values = detailValues();
 		const errors = checkProfileValues({ ...saved, ...values });
 		document.getElementById("set-name-error").textContent = errors.display_name || "";
-		document.getElementById("set-email-error").textContent = errors.email || "";
 		if (errors.display_name) { document.getElementById("set-name").focus(); return; }
-		if (errors.email) { document.getElementById("set-email").focus(); return; }
+		// Contact rows show their own messages
+		if (!ContactEditor.checkAll(detailsForm)) {
+			detailsForm.querySelector(".contact-edit-row [aria-invalid='true']")?.focus();
+			return;
+		}
 		saveSection(detailsForm, values);
 	});
 

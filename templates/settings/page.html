@@ -25,7 +25,7 @@
 			<div>{{ fields.colour_field(p, "set") }}</div>
 			<fieldset>
 				<legend class="settings-legend">Contact <span class="optional">all optional · only connections see these</span></legend>
-				{{ fields.contact_fields(p, "set") }}
+				{{ fields.contact_editor(p, "set") }}
 			</fieldset>
 		</div>
 		<div class="settings-actions">
@@ -123,6 +123,8 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='contactTypes.js') }}"></script>
+<script src="{{ url_for('static', filename='contacts.js') }}"></script>
 <script src="{{ url_for('static', filename='account.js') }}"></script>
 <script src="{{ url_for('static', filename='settings.js') }}"></script>
 {% endblock %}

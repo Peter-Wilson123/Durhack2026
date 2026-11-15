@@ -23,6 +23,7 @@ document.addEventListener("click", async (event) => {
 	const box = button.closest(".wave");
 	const status = box.querySelector(".wave-status");
 	const userId = box.dataset.user;
+
 	button.disabled = true;
 
 	try {
@@ -144,7 +145,7 @@ function updateBioEditor() {
 }
 
 // The name, year, colour and contact inputs shown in edit mode (shared with settings)
-const DETAIL_FIELDS = ["display_name", "year", "avatar_colour", "instagram", "x", "email"];
+const DETAIL_FIELDS = ["display_name", "year", "avatar_colour", "contacts"];
 
 // What the detail inputs hold right now
 function detailValues() {
@@ -175,6 +176,8 @@ function resetDetails() {
 		body.querySelectorAll(`#header-fields [name='${field}'], #contact-fields [name='${field}']`).forEach((input) => {
 			if (input.type === "radio") input.checked = input.value === saved[field];
 			else input.value = saved[field] ?? "";
+			// The contact list redraws itself from its hidden field
+			input.dispatchEvent(new Event("contacts-reset"));
 		});
 	});
 	body.querySelectorAll(".field-error").forEach((p) => { p.textContent = ""; });
@@ -235,9 +238,10 @@ async function doneEdit() {
 	const changes = detailValues();
 	const errors = checkProfileValues({ ...saved, ...changes });
 	document.getElementById("edit-name-error").textContent = errors.display_name || "";
-	const emailError = document.getElementById("edit-email-error");
-	if (emailError) emailError.textContent = errors.email || "";
-	if (Object.keys(errors).length) { say("Check the highlighted fields."); return; }
+	if (Object.keys(errors).length || !ContactEditor.checkAll(document.getElementById("contact-fields"))) {
+		say("Check the highlighted fields.");
+		return;
+	}
 
 	const done = document.querySelector("[data-action='done-edit']");
 	done.disabled = true;

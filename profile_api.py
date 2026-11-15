@@ -29,6 +29,8 @@ get_profile(user_id, viewer, preview_as=None) returns:
 Privacy rules are applied HERE, before anything reaches a template.
 """
 
+import json
+
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 
@@ -113,6 +115,17 @@ def to_profile(user):
         "connection_count": _connection_count(user.user_id),
         "contacts": contacts,
     }
+
+
+def contacts_json(contacts):
+	"""
+	A contact list as the JSON the edit forms keep and send:
+	[{"label", "type", "value"}], same key order and spacing as static/contacts.js.
+	"""
+	return json.dumps(
+		[{"label": c["label"], "type": c["type"], "value": c["value"]} for c in (contacts or [])],
+		separators=(",", ":"), ensure_ascii=False,
+	)
 
 
 def _contacts(user):
