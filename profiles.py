@@ -17,8 +17,9 @@ import flask_login
 from sqlalchemy.exc import SQLAlchemyError
 
 import colours
+import contact_types
 import profile_api
-from models import User, db
+from models import User, UserContact, db
 
 bp = flask.Blueprint("profiles", __name__)
 
@@ -27,6 +28,7 @@ def _template_helpers():
 	return {
 		"category_style": colours.category_style,
 		"avatar_colour": colours.avatar_colour,
+		"contacts_json": profile_api.contacts_json,
 		"category_theme_css": colours.theme_css,
 		"AVATAR_COLOURS": colours.AVATAR_COLOURS,
 		"YEARS": profile_api.YEARS,
@@ -107,6 +109,14 @@ def edit_post(user_id):
 
     action = flask.request.form.get("action", "save")
 
+    # Contact list (sent by the current profile and settings forms as JSON).
+    # Checked before anything changes, so a bad entry saves nothing.
+    contacts = None
+    if "contacts" in flask.request.form:
+        contacts, problem = contact_types.validate_contacts(flask.request.form["contacts"])
+        if problem:
+            return flask.make_response(problem, 400)
+
     # Basics
     display_name = " ".join(flask.request.form.get("display_name", "").split())[:profile_api.NAME_MAX]
     user.display_name = display_name or None
@@ -137,10 +147,25 @@ def edit_post(user_id):
         # Saving edited text keeps changes as a private draft until "Publish bio" is clicked
         user.bio_published = False
 
-    # Contacts (strip leading '@' if typed)
-    user.contact_instagram = flask.request.form.get("instagram", "").strip().lstrip("@")[:60]
-    user.contact_x = flask.request.form.get("x", "").strip().lstrip("@")[:60]
-    user.contact_email = flask.request.form.get("email", "").strip()[:120]
+    if contacts is None:
+        # Older forms: the three fixed fields (strip leading '@' if typed)
+        user.contact_instagram = flask.request.form.get("instagram", "").strip().lstrip("@")[:60]
+        user.contact_x = flask.request.form.get("x", "").strip().lstrip("@")[:60]
+        user.contact_email = flask.request.form.get("email", "").strip()[:120]
+    else:
+        # Replace the user's contact rows with the new list, in order
+        UserContact.query.filter_by(user_id=user_id).delete()
+        for position, entry in enumerate(contacts):
+            db.session.add(UserContact(
+                user_id=user_id, contact_type=entry["type"], value=entry["value"],
+                label=entry["label"], position=position,
+            ))
+        # Keep the old columns in step (first entry of each kind, or empty), so they
+        # never resurface once the list is in use and older code still sees them
+        first = lambda kind: next((e["value"] for e in contacts if e["type"] == kind), "")
+        user.contact_instagram = first("instagram")[:60]
+        user.contact_x = first("x")[:60]
+        user.contact_email = first("email")[:120]
 
     db.session.commit()
 

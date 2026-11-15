@@ -1,7 +1,7 @@
 {# Profile detail fields, shared by profile edit mode (profile/_header.html,
    profile/_contact_card.html) and Account settings (settings/page.html), so the
    two can't drift apart. Field names match the backend's POST /u/<id>/edit form
-   (profiles.edit_post): display_name, year, avatar_colour, instagram, x, email.
+   (profiles.edit_post): display_name, year, avatar_colour, contacts.
    `prefix` keeps ids unique on a page. Saving is done by static/account.js. #}
 
 {# Display name: optional, up to NAME_MAX characters #}
@@ -36,23 +36,21 @@
 </div>
 {%- endmacro %}
 
-{# Contact details: all optional, only connections ever see them #}
-{% macro contact_fields(p, prefix) -%}
-{% set c = p.contacts or {} %}
-<label class="form-label" for="{{ prefix }}-instagram">Instagram</label>
-<div class="input-group mb-2">
-	<span class="input-group-text">@</span>
-	<input class="form-control" id="{{ prefix }}-instagram" name="instagram" value="{{ c.instagram or '' }}" maxlength="60" autocomplete="off">
+{# ContactEditor: the owner's list of contact methods (up to 8), drawn and checked by
+   static/contacts.js using static/contactTypes.js. It keeps the list as JSON in the
+   hidden "contacts" field, which the save code sends to POST /u/<id>/edit. #}
+{% macro contact_editor(p, prefix) -%}
+<div class="contact-editor" data-contact-editor data-prefix="{{ prefix }}">
+	<p class="contact-notice">Only people you connect with can see your contact details.</p>
+	<input type="hidden" name="contacts" value="{{ contacts_json(p.contacts) }}">
+	<ul class="contact-edit-list" aria-label="Your contact methods"></ul>
+	<div class="contact-add-row">
+		<button type="button" class="btn btn-sm btn-outline-primary" data-contact-add>Add contact</button>
+		<span class="contact-count" aria-live="polite"></span>
+	</div>
+	<p class="contact-phone-warning" role="note" hidden>Phone numbers are shared with every connection.</p>
+	<noscript><p class="form-text">Editing contact methods needs JavaScript.</p></noscript>
 </div>
-<label class="form-label" for="{{ prefix }}-x">X</label>
-<div class="input-group mb-2">
-	<span class="input-group-text">@</span>
-	<input class="form-control" id="{{ prefix }}-x" name="x" value="{{ c.x or '' }}" maxlength="60" autocomplete="off">
-</div>
-<label class="form-label" for="{{ prefix }}-email">Contact email</label>
-<input class="form-control" id="{{ prefix }}-email" name="email" type="email" value="{{ c.email or '' }}" maxlength="120"
-	autocomplete="off" aria-describedby="{{ prefix }}-email-error">
-<p class="field-error" id="{{ prefix }}-email-error" role="alert"></p>
 {%- endmacro %}
 
 {# The owner's saved values, so static/account.js can send the whole form
@@ -66,8 +64,6 @@
 	"avatar_colour": p.avatar_colour,
 	"bio": p.bio,
 	"bio_published": p.bio_published,
-	"instagram": (p.contacts or {}).instagram or "",
-	"x": (p.contacts or {}).x or "",
-	"email": (p.contacts or {}).email or "",
+	"contacts": contacts_json(p.contacts),
 } | tojson }}</script>
 {%- endmacro %}

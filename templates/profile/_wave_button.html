@@ -1,4 +1,9 @@
-{# WaveButton: send a wave, see it's been sent, or accept one. Clicks call stubs in static/profile.js #}
+{# WaveButton: send a wave, see it's been sent, or accept one. Clicks call stubs in static/profile.js.
+   Never shown for your own profile: when you preview yourself "as others see me",
+   a note stands in for the button. #}
+{% if p.can_preview or (current_user.is_authenticated and p.id == current_user.user_id) %}
+<p class="wave-note">Other students see a Wave button here.</p>
+{% else %}
 <div class="wave" data-user="{{ p.id }}">
 	{% if p.wave_status == "sent" %}
 	<button type="button" class="btn btn-primary" disabled>Wave sent</button>
@@ -10,3 +15,4 @@
 	{% endif %}
 	<p class="wave-status" role="status"></p>
 </div>
+{% endif %}

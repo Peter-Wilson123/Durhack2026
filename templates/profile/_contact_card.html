@@ -15,51 +15,26 @@
 	{% include "profile/_wave_button.html" %}
 
 	{% else %}
-	{% set c = p.contacts %}
-	{% if c.instagram or c.x or c.email %}
-	<ul class="contact-links view-only">
-		{% if c.instagram %}
-		<li>
-			<a class="contact-link" href="https://www.instagram.com/{{ c.instagram | urlencode }}/" target="_blank" rel="noopener noreferrer"
-				aria-label="Instagram: @{{ c.instagram }} (opens in a new tab)">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-					<rect x="3.5" y="3.5" width="17" height="17" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" />
-				</svg>
-			</a>
-			<span class="contact-label">Instagram</span>
+	{# ContactList: one row per contact method. static/contacts.js adds the icon, a safe
+	   link (https, mailto or tel) or a Copy button; without it the rows are plain text. #}
+	{% if p.contacts %}
+	<ul class="contact-list view-only">
+		{% for c in p.contacts %}
+		<li class="contact-row" data-type="{{ c.type }}" data-value="{{ c.value }}" data-label="{{ c.label or '' }}">
+			<span class="contact-icon" aria-hidden="true"></span>
+			<span class="contact-name">{{ c.label or c.type | capitalize }}</span>
+			<span class="contact-value">{{ c.value }}</span>
 		</li>
-		{% endif %}
-		{% if c.x %}
-		<li>
-			<a class="contact-link" href="https://x.com/{{ c.x | urlencode }}" target="_blank" rel="noopener noreferrer"
-				aria-label="X: @{{ c.x }} (opens in a new tab)">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-					<path d="M5 4l14 16M19 4L5 20" />
-				</svg>
-			</a>
-			<span class="contact-label">X</span>
-		</li>
-		{% endif %}
-		{% if c.email %}
-		<li>
-			<a class="contact-link" href="mailto:{{ c.email }}" aria-label="Email {{ c.email }}">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true">
-					<rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 6 8.5 7 8.5-7" />
-				</svg>
-			</a>
-			<span class="contact-label">Email</span>
-		</li>
-		{% endif %}
+		{% endfor %}
 	</ul>
 	{% else %}
 	<p class="card-empty view-only">No contact details added yet.</p>
 	{% endif %}
 	{% if p.viewer_relation == "self" %}
 	<p class="card-note view-only">{{ only_you("Only your connections see these") }}</p>
-	<fieldset class="edit-only contact-editor" id="contact-fields" aria-describedby="contact-note">
-		<legend class="visually-hidden">Contact details</legend>
-		{{ fields.contact_fields(p, "edit") }}
-		<p class="field-note" id="contact-note">All optional. Only your connections see these.</p>
+	<fieldset class="edit-only contact-fields" id="contact-fields">
+		<legend class="visually-hidden">Contact methods</legend>
+		{{ fields.contact_editor(p, "edit") }}
 	</fieldset>
 	{% endif %}
 	{% endif %}

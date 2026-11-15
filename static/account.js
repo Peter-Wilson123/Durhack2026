@@ -13,7 +13,7 @@ function readSavedProfile() {
 }
 
 // The fields the backend reads from the form
-const PROFILE_FIELDS = ["display_name", "year", "avatar_colour", "bio", "instagram", "x", "email"];
+const PROFILE_FIELDS = ["display_name", "year", "avatar_colour", "bio", "contacts"];
 
 // Save `changes` on top of `saved`. action: "save", "publish" or "unpublish" (bio).
 // Resolves with the new saved values; throws with a message people can read.
@@ -30,6 +30,8 @@ async function saveProfile(saved, changes, action = "save") {
 	}
 	const landed = new URL(response.url).pathname;
 	if (landed === "/login") throw new Error("You've been signed out. Sign in again, then retry.");
+	// The server explains what it couldn't accept (for example a contact value)
+	if (response.status === 400) throw new Error(await response.text());
 	if (!response.ok || landed !== `/u/${saved.user_id}`) {
 		throw new Error("Couldn't save. Please try again.");
 	}
@@ -48,8 +50,5 @@ async function saveProfile(saved, changes, action = "save") {
 function checkProfileValues(values) {
 	const errors = {};
 	if (values.display_name.trim().length > 30) errors.display_name = "Use 30 characters or fewer.";
-	if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
-		errors.email = "That doesn't look like an email address.";
-	}
 	return errors;
 }

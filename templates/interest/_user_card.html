@@ -12,7 +12,8 @@
 
 	{% if person.wave_state == "connected" %}
         <span class="connected-pill">Connected</span>
-    {% elif person.wave_state == "self" %}
+    {# Your own card never gets a Wave button, whatever state the data says #}
+    {% elif person.wave_state == "self" or (current_user.is_authenticated and person.id == current_user.user_id) %}
         <span class="connected-pill">You</span>
     {% else %}
 	{# Same markup as the profile page's Wave button, so static/profile.js handles both #}

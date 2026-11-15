@@ -42,7 +42,7 @@
 	{% block head %}{% endblock %}
 </head>
 
-<body>
+<body{% if current_user.is_authenticated %} data-user-id="{{ current_user.user_id }}"{% endif %}>
 
 	<header class="site-header">
 		<button class="icon-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#site-menu"
