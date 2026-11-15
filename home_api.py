@@ -12,7 +12,7 @@ import random
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from colours import GROUPS, category_slug, group_of
+from colours import GROUPS, category_slug, group_of, on_dark
 from models import Interest, Tag, db
 
 SAMPLES_PER_CARD = 4  # fewer if a group doesn't have that many
@@ -37,7 +37,7 @@ def category_cards():
 		cards.append({
 			"key": key,
 			"name": name,
-			"strong": strong,
+			"strong": on_dark(strong),  # lifted for the dark theme
 			"bg": bg,
 			"fg": fg,
 			"total": len(pool),

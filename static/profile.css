@@ -12,7 +12,7 @@
 }
 
 .profile-page :focus-visible {
-    outline: 3px solid var(--accent);
+    outline: 3px solid var(--accent-text);
     outline-offset: 2px;
 }
 
@@ -50,7 +50,7 @@
 
 .view-as a:hover {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
 }
 
 .view-as a[aria-current] {
@@ -79,7 +79,7 @@
 
 .profile-load-error {
     margin-top: 1rem;
-    color: #9B1C1C !important;
+    color: var(--danger-text) !important;
 }
 
 /* ---------- Avatar ---------- */
@@ -167,7 +167,7 @@
     padding: .2rem .7rem;
     border-radius: 999px;
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
     font-size: .875rem;
     font-weight: 600;
 }
@@ -178,8 +178,8 @@
     gap: .3rem;
     padding: .1rem .55rem;
     border-radius: 999px;
-    background: #FFF4D6;
-    color: #6B4A00;
+    background: var(--notice-bg);
+    color: var(--notice-text);
     font-size: .75rem;
     font-weight: 600;
 }
@@ -309,9 +309,9 @@
 
 .contact-link:hover,
 .contact-link:focus-visible {
-    border-color: var(--accent);
+    border-color: var(--accent-text);
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
 }
 
 .contact-label {
@@ -406,7 +406,7 @@
 }
 
 .swatch:has(input:focus-visible) {
-    outline: 3px solid var(--accent);
+    outline: 3px solid var(--accent-text);
     outline-offset: 6px;
 }
 
@@ -436,10 +436,10 @@
 .bio-warning {
     margin: .6rem 0 0;
     padding: .5rem .75rem;
-    border-left: 3px solid #B7791F;
+    border-left: 3px solid var(--notice-text);
     border-radius: .25rem;
-    background: #FFF8E6;
-    color: #6B4A00 !important;
+    background: var(--notice-bg);
+    color: var(--notice-text) !important;
     font-size: .875rem;
 }
 
@@ -462,11 +462,13 @@
 }
 
 .profile-body[data-editing="true"] .profile-card {
-    border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-color: color-mix(in srgb, var(--accent-text) 35%, var(--line));
 }
 
-.profile-body[data-editing="true"] {
-    padding-bottom: 5rem; /* room for the sticky bar */
+/* Room under the footer for the fixed Save/Cancel bar, so it never covers the
+   last content or the footer (the footer itself stays in normal flow) */
+body:has(.profile-body[data-editing="true"]) {
+    padding-bottom: 5.5rem;
 }
 
 .header-fields {
@@ -508,9 +510,9 @@
     gap: .75rem 1rem;
     padding: .75rem max(1rem, calc((100vw - 960px) / 2 + 1rem));
     border-top: 1px solid var(--line);
-    background: rgba(255, 255, 255, .96);
+    background: rgba(28, 26, 33, .96);
     backdrop-filter: blur(8px);
-    box-shadow: 0 -6px 18px rgba(29, 26, 32, .06);
+    box-shadow: 0 -6px 18px rgba(0, 0, 0, .35);
 }
 
 .edit-bar-status {
@@ -587,7 +589,7 @@
     border: 1px solid var(--line);
     border-radius: .75rem;
     background: var(--surface);
-    box-shadow: 0 10px 24px rgba(29, 26, 32, .12);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .45);
 }
 
 .add-interest-options li {
@@ -599,12 +601,12 @@
 .add-interest-options li[aria-selected="true"],
 .add-interest-options li:hover {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
 }
 
 .add-interest-options .add-create {
     border-top: 1px solid var(--line);
-    color: var(--accent);
+    color: var(--accent-text);
     font-weight: 600;
 }
 
@@ -732,7 +734,7 @@
 /* Field errors in edit mode (fields are shared with settings) */
 .profile-page .field-error {
     margin: .3rem 0 0;
-    color: #B42318;
+    color: var(--danger-text);
     font-size: .85rem;
 }
 

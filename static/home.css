@@ -15,7 +15,7 @@
 
 .auth-link:hover,
 .auth-link:focus-visible {
-    color: var(--accent);
+    color: var(--accent-text);
 }
 
 
@@ -25,7 +25,6 @@
     --dur: .45s;
 
     max-width: 960px;
-    min-height: calc(100vh - var(--header-h));
     margin: 0 auto;
     padding: clamp(2rem, 16vh, 9rem) 1rem 4rem;
     transition: padding-top var(--dur) var(--ease);
@@ -153,7 +152,7 @@
 .search-close:hover,
 .search-close:focus-visible {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
 }
 
 .home[data-state="search"] .search-close,
@@ -175,7 +174,7 @@
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: .75rem;
-    box-shadow: 0 12px 32px rgba(29, 26, 32, .12);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
     animation: drop-in .18s var(--ease);
 }
 
@@ -205,7 +204,7 @@
 .tag-suggestions mark {
     padding: 0;
     background: none;
-    color: var(--accent);
+    color: var(--accent-text);
     font-weight: 600;
 }
 
@@ -285,9 +284,9 @@
 
 .chip:hover,
 .chip:focus-visible {
-    border-color: var(--accent);
+    border-color: var(--accent-text);
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
 }
 
 .hero-actions {
@@ -316,13 +315,13 @@
 
 .action-card:hover,
 .action-card:focus-visible {
-    border-color: var(--accent);
+    border-color: var(--accent-text);
     transform: translateY(-2px);
 }
 
 .action-card:hover strong,
 .action-card:focus-visible strong {
-    color: var(--accent);
+    color: var(--accent-text);
 }
 
 /* ---------- Note above the boxes ---------- */
@@ -432,7 +431,7 @@
 
 .cat-pill:focus-visible,
 .cat-expand:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--accent-text);
     outline-offset: 2px;
 }
 
@@ -543,7 +542,7 @@
 
 .field-error {
     margin: .35rem 0 0;
-    color: #9B1C1C !important;
+    color: var(--danger-text) !important;
     font-size: .85rem;
 }
 
@@ -595,7 +594,7 @@
     padding: .2rem .6rem;
     border-radius: 999px;
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
     font-size: .875rem;
 }
 
@@ -620,8 +619,8 @@
 }
 
 .tag-input:focus-within {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 .2rem rgba(126, 49, 123, .2);
+    border-color: var(--accent-text);
+    box-shadow: 0 0 0 .2rem rgba(215, 162, 211, .25);
 }
 
 .tag-chips {
@@ -636,7 +635,7 @@
     padding: .15rem .25rem .15rem .6rem;
     border-radius: 999px;
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
     font-size: .875rem;
     animation: chip-in .2s var(--ease);
 }
@@ -690,7 +689,7 @@
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: .75rem;
-    box-shadow: 0 12px 32px rgba(29, 26, 32, .12);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
     animation: drop-in .18s var(--ease);
 }
 
@@ -716,7 +715,7 @@
 }
 
 .tag-suggestions .new-tag {
-    color: var(--accent);
+    color: var(--accent-text);
     font-weight: 600;
 }
 

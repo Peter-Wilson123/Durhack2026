@@ -60,11 +60,11 @@
 }
 
 .settings-page .settings-status[data-kind="ok"] {
-    color: #1E7A4C;
+    color: var(--ok-text);
 }
 
 .settings-page .settings-status[data-kind="error"] {
-    color: #B42318;
+    color: var(--danger-text);
 }
 
 .coming-soon {
@@ -73,22 +73,22 @@
     padding: .05rem .5rem;
     border-radius: 999px;
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
     font-size: .75rem;
     font-weight: 600;
 }
 
 .danger-zone {
-    border-color: #F1C4C0;
+    border-color: color-mix(in srgb, var(--danger-text) 40%, transparent);
 }
 
 .danger-zone h2 {
-    color: #B42318;
+    color: var(--danger-text);
 }
 
 .field-error {
     margin: .3rem 0 0;
-    color: #B42318;
+    color: var(--danger-text);
     font-size: .85rem;
 }
 

@@ -7,9 +7,10 @@ broader GROUPS. CATEGORY_GROUP maps each backend category (by slug, made from
 category_name) to a group. If a category is added or renamed in the backend,
 add or rename it here too; anything unknown falls back to grey "Other".
 
-Each group has:
-  strong  header/border colour, with white text on it   (contrast >= 4.5 : 1)
-  bg, fg  pale pill background and dark text on it     (contrast >= 4.5 : 1)
+Each group has (the site is dark):
+  strong  the category hue: dots, borders and tints (--cat); white text on it >= 4.5 : 1
+  bg, fg  dark pill background (30% hue over the surface) and light text on it
+          (70% white): fg on bg >= 8.3 : 1, fg on the page >= 10.8 : 1
 
 Sport and Recreation are both green, so pages always show the group NAME next
 to its colour: never rely on colour alone.
@@ -19,18 +20,18 @@ import re
 
 # key: (name, strong, bg, fg) in the order the home page shows them
 GROUPS = {
-	"science": ("Science", "#0E7490", "#CFFAFE", "#164E63"),        # cyan
-	"mathematics": ("Mathematics", "#1E3A8A", "#DBEAFE", "#1E3A8A"),  # dark blue
-	"technology": ("Technology", "#6D28D9", "#EDE9FE", "#4C1D95"),   # purple
-	"arts": ("Arts", "#A16207", "#FEF9C3", "#713F12"),               # yellow
-	"music": ("Music", "#C2410C", "#FFEDD5", "#7C2D12"),             # orange
-	"humanities": ("Humanities", "#B91C1C", "#FEE2E2", "#7F1D1D"),   # red
-	"society": ("Society", "#4B5563", "#F3F4F6", "#1F2937"),         # grey
-	"practical": ("Practical", "#8A5A2B", "#F5E6D3", "#5C3A12"),     # tan
-	"sport": ("Sport", "#166534", "#DCFCE7", "#14532D"),             # dark green
-	"recreation": ("Recreation", "#4D7C0F", "#ECFCCB", "#365314"),   # bright green
+	"science": ("Science", "#0E7490", "#183542", "#B7D5DE"),        # cyan
+	"mathematics": ("Mathematics", "#1E3A8A", "#1D2440", "#BCC4DC"),  # dark blue
+	"technology": ("Technology", "#6D28D9", "#341E58", "#D3BEF4"),   # purple
+	"arts": ("Arts", "#A16207", "#443019", "#E3D0B5"),               # yellow
+	"music": ("Music", "#C2410C", "#4E261B", "#EDC6B6"),             # orange
+	"humanities": ("Humanities", "#B91C1C", "#4B1B20", "#EABBBB"),   # red
+	"society": ("Society", "#4B5563", "#2A2C35", "#C9CCD0"),         # grey
+	"practical": ("Practical", "#8A5A2B", "#3D2D24", "#DCCEBF"),     # tan
+	"sport": ("Sport", "#166534", "#1A3027", "#B9D1C2"),             # dark green
+	"recreation": ("Recreation", "#4D7C0F", "#2B371C", "#CAD8B7"),   # bright green
 }
-FALLBACK_GROUP = ("Other", "#57534E", "#ECEAEE", "#3B3740")
+FALLBACK_GROUP = ("Other", "#57534E", "#2E2B2E", "#CDCBCA")
 
 # backend category slug -> group key
 CATEGORY_GROUP = {
@@ -55,6 +56,18 @@ CATEGORY_GROUP = {
 	"nature-and-outdoor-recreation": "recreation",
 	"games-and-recreation": "recreation",
 }
+
+
+def on_dark(hex_colour):
+	"""
+	A category hue lifted for the dark theme (45% hue, 55% white), used as --cat
+	on the home page boxes. Deep hues like dark blue would vanish on the dark
+	surface otherwise. Dots are >= 5.6 : 1 on the surface, and ink on its 24%
+	tint is >= 9 : 1.
+	"""
+	h = hex_colour.lstrip("#")
+	r, g, b = (round(int(h[i:i + 2], 16) * .45 + 255 * .55) for i in (0, 2, 4))
+	return f"#{r:02X}{g:02X}{b:02X}"
 
 
 def category_slug(category_name):
@@ -84,8 +97,8 @@ def palette_for_js():
 	so home.js groups and colours search results from this file. "other" is the
 	grey fallback for untagged or unmapped interests.
 	"""
-	groups = {key: {"name": name, "colour": strong} for key, (name, strong, _bg, _fg) in GROUPS.items()}
-	groups["other"] = {"name": FALLBACK_GROUP[0], "colour": FALLBACK_GROUP[1]}
+	groups = {key: {"name": name, "colour": on_dark(strong)} for key, (name, strong, _bg, _fg) in GROUPS.items()}
+	groups["other"] = {"name": FALLBACK_GROUP[0], "colour": on_dark(FALLBACK_GROUP[1])}
 	return {"categories": dict(CATEGORY_GROUP), "groups": groups}
 
 
