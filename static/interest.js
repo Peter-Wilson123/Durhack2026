@@ -1,6 +1,23 @@
 // Interest page behaviour: "Load more" people, and the "+" (add interest) button.
 // Wave buttons on the cards are handled by static/profile.js, shared with the profile page.
 
+// ---------- Back button ----------
+// Goes back in the browser history when you came here from another page of
+// this site. Opened directly (or from another site), it follows its link to "/".
+const backButton = document.getElementById("back-button");
+if (backButton) {
+	backButton.addEventListener("click", (event) => {
+		let cameFromThisSite = false;
+		try {
+			cameFromThisSite = new URL(document.referrer).origin === location.origin;
+		} catch { /* no referrer: opened directly */ }
+		if (cameFromThisSite && history.length > 1) {
+			event.preventDefault();
+			history.back();
+		}
+	});
+}
+
 // ---------- "+" button ----------
 // Adds or removes this interest from your profile through the backend's
 // POST /update-account (it redirects to /account when done), then reloads the

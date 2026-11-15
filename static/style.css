@@ -39,6 +39,12 @@
     --focus-ring: rgba(215, 162, 211, .25);
     --brand-dot: #D7A2D3;
     --brand-ring: #7E317B;
+
+    /* Black "Back" button: near-black fill with a thin light border so it shows on the dark page */
+    --back-bg: #0B0A0E;
+    --back-bg-hover: #24212A;
+    --back-fg: #FFFFFF;
+    --back-border: rgba(255, 255, 255, .28);
 }
 
 :root[data-theme="light"] {
@@ -74,6 +80,11 @@
     --focus-ring: rgba(126, 49, 123, .2);
     --brand-dot: #7E317B;
     --brand-ring: #F3E9F2;
+
+    --back-bg: #111111;
+    --back-bg-hover: #2B2B2B;
+    --back-fg: #FFFFFF;
+    --back-border: #111111;
 
     /* Bootstrap, as the original set it */
     --bs-primary: var(--accent);

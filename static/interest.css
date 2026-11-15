@@ -16,19 +16,59 @@
     outline-offset: 2px;
 }
 
+/* ---------- Back button ----------
+   Compact black button, top-left of the content column. Colours are tokens
+   (style.css): #111 with white text in light mode (18.9:1); near-black with a
+   thin light border in dark mode (white on #0B0A0E: 19.9:1). */
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    margin-bottom: 1rem;
+    padding: .45rem .9rem .45rem .7rem;
+    border: 1px solid var(--back-border);
+    border-radius: .6rem;
+    background: var(--back-bg);
+    color: var(--back-fg);
+    font-size: .9rem;
+    font-weight: 500;
+    line-height: 1.2;
+    text-decoration: none;
+    transition: background-color .15s;
+}
+
+.back-button:hover,
+.back-button:focus-visible {
+    background: var(--back-bg-hover);
+    color: var(--back-fg);
+}
+
 /* ---------- Header ---------- */
 .interest-header {
     margin-bottom: 2rem;
 }
 
+/* Title on the left; the actions (with the "+" / tick button last) on the right,
+   level with the title. On narrow screens the title wraps; the button never shrinks. */
 .interest-title-row {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: .75rem 1rem;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.interest-actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: .75rem;
+    margin-left: auto;
 }
 
 .interest-name {
+    flex: 1 1 auto;
+    min-width: 0;
     margin: 0;
     color: var(--cat-fg);
     font-size: clamp(2rem, 5vw, 3rem);
@@ -72,10 +112,6 @@
     opacity: .6;
 }
 
-.interest-edit {
-    margin-left: auto;
-}
-
 .interest-edit-note {
     margin: .5rem 0 0;
     color: var(--muted) !important;
@@ -85,6 +121,15 @@
 .interest-toggle-label {
     color: var(--muted);
     font-size: .9rem;
+    white-space: nowrap;
+}
+
+/* Phones: the caption beside the button would squeeze the title, so only the
+   button shows (its aria-label still says "Add to my interests"). */
+@media (max-width: 479.98px) {
+    .interest-toggle-label {
+        display: none;
+    }
 }
 
 .interest-category {
