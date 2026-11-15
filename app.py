@@ -113,8 +113,7 @@ def register():
 			password=password,
 
 		)
-		user = auth.load_user(username=username,
-                        email=email, password=password)
+		user = auth.load_user(username=username, email=email)
 		flask_login.login_user(user)
 		return flask.render_template("success.html")
 
