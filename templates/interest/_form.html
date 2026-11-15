@@ -6,7 +6,9 @@
 	<div class="create-name">
 		<label class="form-label" for="interest-name">Name</label>
 		<input class="form-control" id="interest-name" name="interest_name" minlength="2" maxlength="40" required
-			aria-describedby="interest-name-error">
+			aria-describedby="interest-name-preview interest-name-error">
+		{# NamePreview: the name in title case, as it will be saved (static/titleCase.js) #}
+		<p class="form-text" id="interest-name-preview" aria-live="polite" hidden></p>
 		<p class="field-error" id="interest-name-error" aria-live="polite"></p>
 
 		<div class="similar" id="similar" hidden>
