@@ -1,18 +1,21 @@
-{# The profile cards. Left column: Interests (and, for the owner, Suggested).
-   Right column: Contact above About. On phones it is one column in reading order:
-   header, Interests, Suggested, About, Contact (CSS moves Contact up on desktop). #}
+{# The profile cards. Left column: Interests. Right column: Contact above About.
+   For the owner, "Suggested for you" is a full-width row below both columns.
+   On phones it is one column in reading order: header, Interests, About, Contact,
+   then Suggested (CSS moves Contact up on desktop). #}
 <div class="profile-body" data-relation="{{ p.viewer_relation }}" data-user="{{ p.id }}" data-editing="false">
 	{% include "profile/_header.html" %}
 	<div class="profile-columns">
 		<div class="profile-col">
 			{% include "profile/_interest_tags.html" %}
-			{% if p.viewer_relation == "self" %}{% include "profile/_suggestions.html" %}{% endif %}
 		</div>
 		<div class="profile-col profile-col-side">
 			{% include "profile/_bio_card.html" %}
 			{% include "profile/_contact_card.html" %}
 		</div>
 	</div>
+
+	{# SuggestedForYou: owner only, a full-width row along the bottom #}
+	{% if p.viewer_relation == "self" %}{% include "profile/_suggestions.html" %}{% endif %}
 
 	{% if p.viewer_relation == "self" %}
 	{% from "account/_fields.html" import saved_values %}

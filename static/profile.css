@@ -648,15 +648,28 @@ body:has(.profile-body[data-editing="true"]) {
     font-weight: 600;
 }
 
-/* Suggested for you */
+/* Suggested for you: a full-width row below the other cards (owner only).
+   Three equal cards side by side from 768px; one column below that. */
+.card-suggested {
+    margin-top: 1.25rem;
+}
+
 .suggestions {
     display: grid;
     grid-template-columns: minmax(0, 1fr); /* let long descriptions truncate instead of overflowing */
-    gap: .75rem;
+    gap: 1rem;
     margin: 0;
     padding: 0;
     list-style: none;
 }
+
+@media (min-width: 768px) {
+    .suggestions {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: stretch;  /* equal heights */
+    }
+}
+
 
 .suggestion {
     display: flex;
